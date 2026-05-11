@@ -1,0 +1,51 @@
+services:
+  users_db:
+    container_name: users_db
+    image: postgres:latest
+    environment:
+      DB_USER: ${USER_DB_USERNAME}
+      DB_PASSWORD: ${USERS_DB_PASSWORD}
+      DB_DATABASE: ${USERS_DB_DATABASE}
+    ports:
+      - "5432:5432"
+    volumes:
+      - users_data:/var/lib/postgresql/data
+    networks:
+      - innowise_network
+
+  auth_db:
+    container_name: auth_db
+    image: postgres:latest
+    environment:
+      AUTH_USERNAME: ${AUTH_DB_USERNAME}
+      AUTH_PASSWORD: ${AUTH_DB_PASSWORD}
+      AUTH_DB: ${AUTH_DB_DATABASE}
+    ports:
+      - "5433:5432"
+    volumes:
+      - auth_data:/var/lib/postgresql/data
+    networks:
+      - innowise_network
+
+  order_db:
+    image: postgres:latest
+    environment:
+      ORDER_USERNAME: ${ORDER_DB_USERNAME}
+      ORDER_PASSWORD: ${ORDER_DB_PASSWORD}
+      ORDER_DATABASE: ${ORDER_DB_DATABASE}
+    ports:
+      - "5434:5432"
+    volumes:
+      - order_data:/var/lib/postgresql/data
+    networks:
+      - innowise_network
+
+volumes:
+  users_data:
+  auth_data:
+  order_data:
+
+
+networks:
+  innowise_network:
+    driver: bridge
