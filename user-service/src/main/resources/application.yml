@@ -1,0 +1,30 @@
+spring:
+  application:
+    name: user-service
+  datasource:
+    url: jdbc:postgresql://localhost:5432/${USERS_DB_DATABASE:kirill}
+    username: ${USER_DB_USERNAME:kirill}
+    password: ${USERS_DB_PASSWORD:password}
+  jpa:
+    hibernate:
+      ddl-auto: validate
+    show-sql: true
+
+  liquibase:
+    change-log: classpath:/db/changelog/changelog-root.yaml
+    enabled: true
+
+  data:
+    redis:
+      host: ${REDIS_HOST:localhost}
+      port: ${REDIS_PORT:6379}
+      timeout: 2000ms
+
+server:
+  port: 8082
+
+logging:
+  level:
+    com.innowise.userservice: DEBUG
+    org.springframework.web: DEBUG
+    root: DEBUG
