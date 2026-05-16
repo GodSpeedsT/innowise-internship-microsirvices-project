@@ -15,6 +15,7 @@ import java.time.LocalDateTime;
 import java.time.YearMonth;
 import java.util.UUID;
 import lombok.AllArgsConstructor;
+import lombok.Builder;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
@@ -25,7 +26,7 @@ import org.hibernate.annotations.UuidGenerator;
 
 @Entity
 @Table(name = "payment_cards", indexes = {
-    @Index(name = "idx_user_id", columnList = "user_id"),
+    @Index(name = "idx_card_user_id", columnList = "user_id"),
     @Index(name = "idx_card_number", columnList = "card_number"),
     @Index(name = "idx_active", columnList = "active")
 })
@@ -33,6 +34,7 @@ import org.hibernate.annotations.UuidGenerator;
 @Setter
 @NoArgsConstructor
 @AllArgsConstructor
+@Builder
 public class PaymentCard {
 
   @Id
@@ -50,7 +52,7 @@ public class PaymentCard {
   private String expirationDate;
   @Column(name = "active", nullable = false)
   private boolean active = true;
-  @Column(name = "created_at", nullable = false)
+  @Column(name = "created_at", nullable = false, updatable = false)
   @CreationTimestamp
   private LocalDateTime createdAt;
   @Column(name = "updated_at", nullable = false)
