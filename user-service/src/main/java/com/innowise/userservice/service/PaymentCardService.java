@@ -4,6 +4,8 @@ import com.innowise.userservice.dto.PaymentCardRequestDto;
 import com.innowise.userservice.dto.PaymentCardResponseDto;
 import com.innowise.userservice.entity.PaymentCard;
 import com.innowise.userservice.entity.User;
+import com.innowise.userservice.exception.BusinessException;
+import com.innowise.userservice.exception.ResourceNotFoundException;
 import com.innowise.userservice.mapper.PaymentCardMapper;
 import com.innowise.userservice.repository.PaymentCardRepository;
 import com.innowise.userservice.repository.PaymentCardSpecification;
@@ -30,11 +32,11 @@ public class PaymentCardService {
   @Transactional
   public PaymentCardResponseDto createCard(PaymentCardRequestDto dto) {
     User user = userRepository.findById(dto.getUserId())
-        .orElseThrow(() -> new RuntimeException("User not found: " + dto.getUserId()));
+        .orElseThrow(() -> ResourceNotFoundException.ofUser(dto.getUserId()));
 
     long cardCount = userRepository.countCardsByUserId(dto.getUserId());
     if (cardCount >= MAX_CARDS_PER_USER) {
-      throw new RuntimeException("Card count exceeds limit: " + MAX_CARDS_PER_USER);
+      throw new BusinessException("User already has maximum count of cards: " + MAX_CARDS_PER_USER);
     }
     PaymentCard card = paymentCardMapper.toEntity(dto);
     card.setUser(user);
@@ -43,24 +45,30 @@ public class PaymentCardService {
     return paymentCardMapper.toResponseDto(paymentCardRepository.save(card));
   }
 
-  public Page<PaymentCardResponseDto> getCards(String holder, Boolean active, Pageable pageable) {
+  public PaymentCardResponseDto getCardById(UUID id) {
+    return paymentCardMapper.toResponseDto(findCardOrThrow(id));
+  }
+
+  public Page<PaymentCardResponseDto> getAllCards(String holder, Boolean active,
+      Pageable pageable) {
     Specification<PaymentCard> spec = PaymentCardSpecification.filterHolder(holder)
         .and(PaymentCardSpecification.filterByActive(active));
     return paymentCardRepository.findAll(spec, pageable)
         .map(paymentCardMapper::toResponseDto);
   }
 
-  public List<PaymentCardResponseDto> getAllCards(UUID userId) {
-    return paymentCardRepository.findByUserId(userId)
-        .stream()
+  public List<PaymentCardResponseDto> getCardsByUserId(UUID userId) {
+    if (!userRepository.existsById(userId)) {
+      throw ResourceNotFoundException.ofUser(userId);
+    }
+    return paymentCardRepository.findByUserId(userId).stream()
         .map(paymentCardMapper::toResponseDto)
         .toList();
   }
 
   @Transactional
   public PaymentCardResponseDto updateCard(UUID id, PaymentCardRequestDto dto) {
-    PaymentCard card = paymentCardRepository.findById(id)
-        .orElseThrow(() -> new RuntimeException("Card not found: " + id));
+    PaymentCard card = findCardOrThrow(id);
     paymentCardMapper.updateCardFromDto(dto, card);
     return paymentCardMapper.toResponseDto(paymentCardRepository.save(card));
   }
@@ -68,7 +76,7 @@ public class PaymentCardService {
   @Transactional
   public void setActiveStatus(UUID id, Boolean active) {
     if (!paymentCardRepository.existsById(id)) {
-      throw new RuntimeException("Card not found: " + id);
+      throw ResourceNotFoundException.ofCard(id);
     }
     paymentCardRepository.setActiveStatus(id, active);
   }
@@ -76,9 +84,14 @@ public class PaymentCardService {
   @Transactional
   public void deleteCard(UUID id) {
     if (!paymentCardRepository.existsById(id)) {
-      throw new RuntimeException("Card not found: " + id);
+      throw ResourceNotFoundException.ofCard(id);
     }
     paymentCardRepository.deleteById(id);
+  }
+
+  private PaymentCard findCardOrThrow(UUID id) {
+    return paymentCardRepository.findById(id)
+        .orElseThrow(() -> ResourceNotFoundException.ofCard(id));
   }
 
 }

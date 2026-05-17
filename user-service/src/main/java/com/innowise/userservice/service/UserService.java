@@ -3,7 +3,11 @@ package com.innowise.userservice.service;
 import com.innowise.userservice.dto.UserRequestDto;
 import com.innowise.userservice.dto.UserResponseDto;
 import com.innowise.userservice.entity.User;
+import com.innowise.userservice.exception.BusinessException;
+import com.innowise.userservice.exception.ResourceNotFoundException;
+import com.innowise.userservice.mapper.PaymentCardMapper;
 import com.innowise.userservice.mapper.UserMapper;
+import com.innowise.userservice.repository.PaymentCardRepository;
 import com.innowise.userservice.repository.UserRepository;
 import com.innowise.userservice.repository.UserSpecification;
 import java.util.UUID;
@@ -20,11 +24,14 @@ public class UserService {
 
   private final UserRepository userRepository;
   private final UserMapper userMapper;
+  private final PaymentCardRepository cardRepository;
+  private final PaymentCardMapper cardMapper;
+
 
   @Transactional
   public UserResponseDto createUser(UserRequestDto dto) {
     if (userRepository.existsByEmail(dto.getEmail())) {
-      throw new IllegalArgumentException("Email already exists");
+      throw new BusinessException("User with email '" + dto.getEmail() + "' already exists");
     }
     User user = userMapper.toEntity(dto);
     user.setActive(true);
@@ -33,7 +40,7 @@ public class UserService {
 
   public UserResponseDto getUserById(UUID id) {
     User user = userRepository.findById(id)
-        .orElseThrow(() -> new RuntimeException("User not found: " + id));
+        .orElseThrow(() -> new ResourceNotFoundException("Not found"));
 
     return userMapper.toResponseDto(user);
   }
@@ -48,8 +55,7 @@ public class UserService {
 
   @Transactional
   public UserResponseDto updateUser(UUID id, UserRequestDto dto) {
-    User user = userRepository.findById(id)
-        .orElseThrow(() -> new RuntimeException("User not found: " + id));
+    User user = findUserOrThrow(id);
     userMapper.updateUserFromDto(dto, user);
     return userMapper.toResponseDto(userRepository.save(user));
   }
@@ -57,7 +63,7 @@ public class UserService {
   @Transactional
   public void setActiveStatus(UUID id, Boolean active) {
     if (!userRepository.existsById(id)) {
-      throw new RuntimeException("User not found: " + id);
+      throw ResourceNotFoundException.ofUser(id);
     }
     userRepository.setActiveStatus(id, active);
   }
@@ -65,9 +71,14 @@ public class UserService {
   @Transactional
   public void deleteUser(UUID id) {
     if (!userRepository.existsById(id)) {
-      throw new RuntimeException("User not found: " + id);
+      throw ResourceNotFoundException.ofUser(id);
     }
     userRepository.deleteById(id);
+  }
+
+  private User findUserOrThrow(UUID id) {
+    return userRepository.findById(id)
+        .orElseThrow(() -> ResourceNotFoundException.ofUser(id));
   }
 
 }
