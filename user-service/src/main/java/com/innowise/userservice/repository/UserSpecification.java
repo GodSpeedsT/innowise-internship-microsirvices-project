@@ -7,7 +7,7 @@ import jakarta.persistence.criteria.Predicate;
 import org.springframework.data.jpa.domain.Specification;
 
 
-public class UserSpicification {
+public class UserSpecification {
 
   public static Specification<User> filterByUsernameAndSurname(String username, String surname) {
     return ((root, query, criteriaBuilder) -> {

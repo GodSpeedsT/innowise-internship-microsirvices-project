@@ -14,6 +14,8 @@ import org.springframework.stereotype.Repository;
 @Repository
 public interface UserRepository extends JpaRepository<User, UUID>, JpaSpecificationExecutor<User> {
 
+  boolean existsByEmail(String email);
+
   @Query(value = "SELECT * FROM users WHERE username = :name AND surname = :surname", nativeQuery = true)
   List<User> findUsersByNameAndSurnameNative(@Param("name") String name,
       @Param("surname") String surname);
