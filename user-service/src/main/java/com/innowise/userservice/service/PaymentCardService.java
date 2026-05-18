@@ -13,6 +13,9 @@ import com.innowise.userservice.repository.UserRepository;
 import java.util.List;
 import java.util.UUID;
 import lombok.RequiredArgsConstructor;
+import org.springframework.cache.Cache;
+import org.springframework.cache.CacheManager;
+import org.springframework.cache.annotation.CacheEvict;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.domain.Specification;
@@ -28,8 +31,10 @@ public class PaymentCardService {
   private final PaymentCardRepository paymentCardRepository;
   private final UserRepository userRepository;
   private final PaymentCardMapper paymentCardMapper;
+  private final CacheManager cacheManager;
 
   @Transactional
+  @CacheEvict(cacheNames = "user-info", key = "#dto.userId")
   public PaymentCardResponseDto createCard(PaymentCardRequestDto dto) {
     User user = userRepository.findById(dto.getUserId())
         .orElseThrow(() -> ResourceNotFoundException.ofUser(dto.getUserId()));
@@ -69,29 +74,41 @@ public class PaymentCardService {
   @Transactional
   public PaymentCardResponseDto updateCard(UUID id, PaymentCardRequestDto dto) {
     PaymentCard card = findCardOrThrow(id);
+    UUID userId = card.getUser().getId();
     paymentCardMapper.updateCardFromDto(dto, card);
-    return paymentCardMapper.toResponseDto(paymentCardRepository.save(card));
+    PaymentCardResponseDto response = paymentCardMapper.toResponseDto(
+        paymentCardRepository.save(card));
+
+    evictCacheUser(userId);
+    return response;
   }
 
   @Transactional
   public void setActiveStatus(UUID id, Boolean active) {
-    if (!paymentCardRepository.existsById(id)) {
-      throw ResourceNotFoundException.ofCard(id);
-    }
+    PaymentCard card = findCardOrThrow(id);
+    UUID userId = card.getUser().getId();
     paymentCardRepository.setActiveStatus(id, active);
+    evictCacheUser(userId);
   }
 
   @Transactional
   public void deleteCard(UUID id) {
-    if (!paymentCardRepository.existsById(id)) {
-      throw ResourceNotFoundException.ofCard(id);
-    }
+    PaymentCard card = findCardOrThrow(id);
+    UUID userId = card.getUser().getId();
     paymentCardRepository.deleteById(id);
+    evictCacheUser(userId);
   }
 
   private PaymentCard findCardOrThrow(UUID id) {
     return paymentCardRepository.findById(id)
         .orElseThrow(() -> ResourceNotFoundException.ofCard(id));
+  }
+
+  private void evictCacheUser(UUID userId) {
+    Cache cache = cacheManager.getCache("user-info");
+    if (cache != null) {
+      cache.evict(userId);
+    }
   }
 
 }

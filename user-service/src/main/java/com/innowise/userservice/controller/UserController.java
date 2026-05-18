@@ -2,6 +2,7 @@ package com.innowise.userservice.controller;
 
 import com.innowise.userservice.dto.UserRequestDto;
 import com.innowise.userservice.dto.UserResponseDto;
+import com.innowise.userservice.dto.UserWithCardsDto;
 import com.innowise.userservice.entity.User;
 import com.innowise.userservice.repository.UserRepository;
 import com.innowise.userservice.service.UserService;
@@ -58,6 +59,11 @@ public class UserController {
       @PathVariable UUID id,
       @Valid @RequestBody UserRequestDto user) {
     return ResponseEntity.ok(userService.updateUser(id, user));
+  }
+
+  @GetMapping("/usersWithCards/{userId}")
+  public ResponseEntity<UserWithCardsDto> getUsersWithCards(@PathVariable UUID userId) {
+    return ResponseEntity.ok(userService.getUsersWithCards(userId));
   }
 
   @PatchMapping("/activate/{id}")

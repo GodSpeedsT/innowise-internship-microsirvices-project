@@ -1,7 +1,10 @@
 package com.innowise.userservice.service;
 
+import com.innowise.userservice.dto.PaymentCardResponseDto;
 import com.innowise.userservice.dto.UserRequestDto;
 import com.innowise.userservice.dto.UserResponseDto;
+import com.innowise.userservice.dto.UserWithCardsDto;
+import com.innowise.userservice.entity.PaymentCard;
 import com.innowise.userservice.entity.User;
 import com.innowise.userservice.exception.BusinessException;
 import com.innowise.userservice.exception.ResourceNotFoundException;
@@ -10,8 +13,12 @@ import com.innowise.userservice.mapper.UserMapper;
 import com.innowise.userservice.repository.PaymentCardRepository;
 import com.innowise.userservice.repository.UserRepository;
 import com.innowise.userservice.repository.UserSpecification;
+import java.util.List;
 import java.util.UUID;
 import lombok.RequiredArgsConstructor;
+import org.springframework.cache.annotation.CacheConfig;
+import org.springframework.cache.annotation.CacheEvict;
+import org.springframework.cache.annotation.Cacheable;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.domain.Specification;
@@ -20,11 +27,12 @@ import org.springframework.transaction.annotation.Transactional;
 
 @RequiredArgsConstructor
 @Service
+@CacheConfig(cacheNames = "user-info")
 public class UserService {
 
   private final UserRepository userRepository;
-  private final UserMapper userMapper;
   private final PaymentCardRepository cardRepository;
+  private final UserMapper userMapper;
   private final PaymentCardMapper cardMapper;
 
 
@@ -53,7 +61,18 @@ public class UserService {
         .map(userMapper::toResponseDto);
   }
 
+  @Cacheable(key = "#id")
+  public UserWithCardsDto getUsersWithCards(UUID id) {
+    User user = findUserOrThrow(id);
+    List<PaymentCard> cards = cardRepository.findByUserId(id);
+    List<PaymentCardResponseDto> cardsDto = cards.stream()
+        .map(cardMapper::toResponseDto)
+        .toList();
+    return userMapper.toWithCardsDto(user, cardsDto);
+  }
+
   @Transactional
+  @CacheEvict(key = "#id")
   public UserResponseDto updateUser(UUID id, UserRequestDto dto) {
     User user = findUserOrThrow(id);
     userMapper.updateUserFromDto(dto, user);
@@ -61,6 +80,7 @@ public class UserService {
   }
 
   @Transactional
+  @CacheEvict(key = "#id")
   public void setActiveStatus(UUID id, Boolean active) {
     if (!userRepository.existsById(id)) {
       throw ResourceNotFoundException.ofUser(id);
@@ -69,6 +89,7 @@ public class UserService {
   }
 
   @Transactional
+  @CacheEvict(key = "#id")
   public void deleteUser(UUID id) {
     if (!userRepository.existsById(id)) {
       throw ResourceNotFoundException.ofUser(id);
