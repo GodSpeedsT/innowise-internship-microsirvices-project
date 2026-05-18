@@ -1,6 +1,7 @@
 package com.innowise.userservice.dto;
 
 import jakarta.validation.constraints.NotBlank;
+import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Pattern;
 import jakarta.validation.constraints.Size;
 import java.util.UUID;
@@ -9,7 +10,7 @@ import lombok.Data;
 @Data
 public class PaymentCardRequestDto {
 
-  @NotBlank(message = "User ID is required")
+  @NotNull(message = "User ID is required")
   private UUID userId;
   @NotBlank(message = "Card number is required")
   private String cardNumber;
