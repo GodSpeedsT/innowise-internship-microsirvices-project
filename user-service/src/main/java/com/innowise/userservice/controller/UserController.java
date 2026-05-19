@@ -3,8 +3,6 @@ package com.innowise.userservice.controller;
 import com.innowise.userservice.dto.UserRequestDto;
 import com.innowise.userservice.dto.UserResponseDto;
 import com.innowise.userservice.dto.UserWithCardsDto;
-import com.innowise.userservice.entity.User;
-import com.innowise.userservice.repository.UserRepository;
 import com.innowise.userservice.service.UserService;
 import jakarta.validation.Valid;
 import java.util.UUID;

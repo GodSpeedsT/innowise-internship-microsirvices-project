@@ -13,28 +13,30 @@ import com.innowise.userservice.mapper.UserMapper;
 import com.innowise.userservice.repository.PaymentCardRepository;
 import com.innowise.userservice.repository.UserRepository;
 import com.innowise.userservice.repository.UserSpecification;
+import java.time.Duration;
 import java.util.List;
 import java.util.UUID;
 import lombok.RequiredArgsConstructor;
-import org.springframework.cache.annotation.CacheConfig;
-import org.springframework.cache.annotation.CacheEvict;
-import org.springframework.cache.annotation.Cacheable;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.domain.Specification;
+import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 @RequiredArgsConstructor
+@Slf4j
 @Service
-@CacheConfig(cacheNames = "user-info")
 public class UserService {
 
   private final UserRepository userRepository;
   private final PaymentCardRepository cardRepository;
   private final UserMapper userMapper;
   private final PaymentCardMapper cardMapper;
+  private final RedisTemplate<String, UserWithCardsDto> redisTemplate;
 
+  private static final String CACHE_NAME = "user-info:";
 
   @Transactional
   public UserResponseDto createUser(UserRequestDto dto) {
@@ -61,45 +63,58 @@ public class UserService {
         .map(userMapper::toResponseDto);
   }
 
-  @Cacheable(key = "#id")
   public UserWithCardsDto getUsersWithCards(UUID id) {
+    var cacheId = CACHE_NAME + id;
+    UserWithCardsDto fromCache = redisTemplate.opsForValue().get(cacheId);
+    if (fromCache != null) {
+      log.info("Get user from cache: {} ", fromCache.getUuid());
+      return fromCache;
+    }
+    log.info("Get user from db: {} ", id);
     User user = findUserOrThrow(id);
     List<PaymentCard> cards = cardRepository.findByUserId(id);
     List<PaymentCardResponseDto> cardsDto = cards.stream()
         .map(cardMapper::toResponseDto)
         .toList();
-    return userMapper.toWithCardsDto(user, cardsDto);
+
+    UserWithCardsDto responseDto = userMapper.toWithCardsDto(user, cardsDto);
+    redisTemplate.opsForValue().set(cacheId, responseDto, Duration.ofMinutes(10));
+
+    return responseDto;
   }
 
   @Transactional
-  @CacheEvict(key = "#id")
   public UserResponseDto updateUser(UUID id, UserRequestDto dto) {
     User user = findUserOrThrow(id);
     userMapper.updateUserFromDto(dto, user);
+
+    evictCacheUser(id);
+
     return userMapper.toResponseDto(userRepository.save(user));
   }
 
   @Transactional
-  @CacheEvict(key = "#id")
   public void setActiveStatus(UUID id, Boolean active) {
-    if (!userRepository.existsById(id)) {
-      throw ResourceNotFoundException.ofUser(id);
-    }
+    findUserOrThrow(id);
+
     userRepository.setActiveStatus(id, active);
+    evictCacheUser(id);
   }
 
   @Transactional
-  @CacheEvict(key = "#id")
   public void deleteUser(UUID id) {
-    if (!userRepository.existsById(id)) {
-      throw ResourceNotFoundException.ofUser(id);
-    }
+    findUserOrThrow(id);
     userRepository.deleteById(id);
+    evictCacheUser(id);
   }
 
   private User findUserOrThrow(UUID id) {
     return userRepository.findById(id)
         .orElseThrow(() -> ResourceNotFoundException.ofUser(id));
+  }
+
+  private void evictCacheUser(UUID userId) {
+    redisTemplate.delete(CACHE_NAME + userId);
   }
 
 }

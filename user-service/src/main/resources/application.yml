@@ -21,7 +21,6 @@ spring:
       port: ${REDIS_PORT:6379}
       timeout: 5000ms
       database: ${REDIS_DATABASE:0}
-      password: ${REDIS_PASSWORD:TARANTAS}
       client-type: lettuce
       lettuce:
         pool:
@@ -30,9 +29,6 @@ spring:
           min-idle: 0
           max-wait: -1ms
 
-
-
-
 server:
   port: 8082
 
@@ -40,4 +36,4 @@ logging:
   level:
     com.innowise.userservice: DEBUG
     org.springframework.web: DEBUG
-    root: DEBUG
+    root: INFO

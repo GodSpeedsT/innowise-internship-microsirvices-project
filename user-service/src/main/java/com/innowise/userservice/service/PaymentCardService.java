@@ -2,6 +2,7 @@ package com.innowise.userservice.service;
 
 import com.innowise.userservice.dto.PaymentCardRequestDto;
 import com.innowise.userservice.dto.PaymentCardResponseDto;
+import com.innowise.userservice.dto.UserWithCardsDto;
 import com.innowise.userservice.entity.PaymentCard;
 import com.innowise.userservice.entity.User;
 import com.innowise.userservice.exception.BusinessException;
@@ -13,12 +14,10 @@ import com.innowise.userservice.repository.UserRepository;
 import java.util.List;
 import java.util.UUID;
 import lombok.RequiredArgsConstructor;
-import org.springframework.cache.Cache;
-import org.springframework.cache.CacheManager;
-import org.springframework.cache.annotation.CacheEvict;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.domain.Specification;
+import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -31,10 +30,11 @@ public class PaymentCardService {
   private final PaymentCardRepository paymentCardRepository;
   private final UserRepository userRepository;
   private final PaymentCardMapper paymentCardMapper;
-  private final CacheManager cacheManager;
+  private final RedisTemplate<String, UserWithCardsDto> redisTemplate;
+
+  private static final String CACHE_NAME = "user-info:";
 
   @Transactional
-  @CacheEvict(cacheNames = "user-info", key = "#dto.userId")
   public PaymentCardResponseDto createCard(PaymentCardRequestDto dto) {
     User user = userRepository.findById(dto.getUserId())
         .orElseThrow(() -> ResourceNotFoundException.ofUser(dto.getUserId()));
@@ -47,6 +47,7 @@ public class PaymentCardService {
     card.setUser(user);
     card.setActive(true);
 
+    evictCacheUser(dto.getUserId());
     return paymentCardMapper.toResponseDto(paymentCardRepository.save(card));
   }
 
@@ -94,9 +95,8 @@ public class PaymentCardService {
   @Transactional
   public void deleteCard(UUID id) {
     PaymentCard card = findCardOrThrow(id);
-    UUID userId = card.getUser().getId();
     paymentCardRepository.deleteById(id);
-    evictCacheUser(userId);
+    evictCacheUser(card.getUser().getId());
   }
 
   private PaymentCard findCardOrThrow(UUID id) {
@@ -105,10 +105,7 @@ public class PaymentCardService {
   }
 
   private void evictCacheUser(UUID userId) {
-    Cache cache = cacheManager.getCache("user-info");
-    if (cache != null) {
-      cache.evict(userId);
-    }
+      redisTemplate.delete(CACHE_NAME + userId);
   }
 
 }

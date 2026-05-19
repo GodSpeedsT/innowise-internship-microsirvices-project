@@ -13,6 +13,7 @@ public class PaymentCardRequestDto {
   @NotNull(message = "User ID is required")
   private UUID userId;
   @NotBlank(message = "Card number is required")
+  @Size(min = 16, max = 16, message = "Every card must to have 16 digits")
   private String cardNumber;
   @NotBlank(message = "Holder name is required")
   @Size(max = 100)

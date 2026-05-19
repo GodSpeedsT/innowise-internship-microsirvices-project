@@ -49,6 +49,8 @@ services:
       REDIS_DATABASE: ${REDIS_DATABASE}
     ports:
       - "6379:6379"
+    volumes:
+      - redis_data:/data
     networks:
       - innowise_network
 
@@ -57,6 +59,7 @@ volumes:
   users_data:
   auth_data:
   order_data:
+  redis_data:
 
 
 networks:
