@@ -29,8 +29,7 @@ public interface UserMapper {
   @Mapping(target = "cards", ignore = true)
   void updateUserFromDto(UserRequestDto dto, @MappingTarget User user);
 
-  @Mapping(source = "user.id", target = "uuid")
-  @Mapping(source = "user.birthDate", target = "birthday")
+  @Mapping(source = "user", target = "user")
   @Mapping(source = "cards", target = "cards")
   UserWithCardsDto toWithCardsDto(User user, List<PaymentCardResponseDto> cards);
 }

@@ -67,7 +67,7 @@ public class UserService {
     var cacheId = CACHE_NAME + id;
     UserWithCardsDto fromCache = redisTemplate.opsForValue().get(cacheId);
     if (fromCache != null) {
-      log.info("Get user from cache: {} ", fromCache.getUuid());
+      log.info("Get user from cache: {} ", fromCache.getUser().getUuid());
       return fromCache;
     }
     log.info("Get user from db: {} ", id);

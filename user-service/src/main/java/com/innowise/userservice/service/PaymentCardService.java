@@ -105,7 +105,7 @@ public class PaymentCardService {
   }
 
   private void evictCacheUser(UUID userId) {
-      redisTemplate.delete(CACHE_NAME + userId);
+    redisTemplate.delete(CACHE_NAME + userId);
   }
 
 }
