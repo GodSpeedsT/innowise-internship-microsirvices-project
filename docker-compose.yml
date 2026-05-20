@@ -54,6 +54,25 @@ services:
     networks:
       - innowise_network
 
+  user-service:
+    container_name: user_service
+    build:
+      context: /user-service
+      dockerfile: Dockerfile
+    ports:
+      - "8081:8081"
+    environment:
+      SPRING_PROFILES_ACTIVE: docker
+      USERS_DB_DATABASE: kirill
+      USER_DB_USERNAME: kirill
+      USERS_DB_PASSWORD: password
+      REDIS_HOST: localhost
+      REDIS_DATABASE: 0
+    depends_on:
+      - users_db
+      - users_redis
+    networks:
+      - innowise_network
 
 volumes:
   users_data:

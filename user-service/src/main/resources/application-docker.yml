@@ -1,9 +1,7 @@
 spring:
-  application:
-    name: user-service
   datasource:
-    url: jdbc:postgresql://localhost:5432/${USERS_DB_DATABASE:kirill}
-    username: ${USER_DB_USERNAME:kirill}
+    url: jdbc:postgresql://users_db:5432/${USERS_DB_DATABASE:users_db}
+    username: ${USER_DB_USERNAME:postgres}
     password: ${USERS_DB_PASSWORD:password}
   jpa:
     hibernate:
@@ -17,8 +15,8 @@ spring:
 
   data:
     redis:
-      host: ${REDIS_HOST:localhost}
-      port: ${REDIS_PORT:6379}
+      host: users_redis
+      port: 6379
       timeout: 5000ms
       database: ${REDIS_DATABASE:0}
       client-type: lettuce
