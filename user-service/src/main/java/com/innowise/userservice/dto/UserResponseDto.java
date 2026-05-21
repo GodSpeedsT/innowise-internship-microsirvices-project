@@ -1,0 +1,19 @@
+package com.innowise.userservice.dto;
+
+import java.time.LocalDate;
+import java.time.LocalDateTime;
+import java.util.UUID;
+import lombok.Data;
+
+@Data
+public class UserResponseDto {
+
+  private UUID uuid;
+  private String username;
+  private String surname;
+  private String email;
+  private LocalDate birthday;
+  private boolean active;
+  private LocalDateTime createdAt;
+  private LocalDateTime updatedAt;
+}
