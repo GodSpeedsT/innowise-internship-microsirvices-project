@@ -71,7 +71,7 @@ jobs:
           retention-days: 1
 
   code-analysis:
-    name: 🔍 Code Analysis (SonarCloud)
+    name: Code Analysis
     needs: test
     runs-on: ubuntu-latest
 
