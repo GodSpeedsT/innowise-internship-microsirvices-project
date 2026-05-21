@@ -1,5 +1,2 @@
-**/.idea/
-**/.env
-*.class
-*.jar
-**/target/
+.idea
+.env
