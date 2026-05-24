@@ -7,15 +7,15 @@ import static org.mockito.Mockito.when;
 
 import com.innowise.userservice.dto.PaymentCardRequestDto;
 import com.innowise.userservice.dto.PaymentCardResponseDto;
-import com.innowise.userservice.dto.UserWithCardsDto;
+import com.innowise.userservice.dto.UserResponseDto;
 import com.innowise.userservice.entity.PaymentCard;
 import com.innowise.userservice.entity.User;
-import com.innowise.userservice.exception.BusinessException;
+import com.innowise.userservice.exception.CardException;
 import com.innowise.userservice.exception.ResourceNotFoundException;
 import com.innowise.userservice.mapper.PaymentCardMapper;
 import com.innowise.userservice.repository.PaymentCardRepository;
 import com.innowise.userservice.repository.UserRepository;
-import com.innowise.userservice.service.PaymentCardService;
+import com.innowise.userservice.service.impl.PaymentCardServiceImpl;
 import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
@@ -41,10 +41,10 @@ class PaymentCardServiceTest {
   @Mock
   private PaymentCardMapper paymentCardMapper;
   @Mock
-  private RedisTemplate<String, UserWithCardsDto> redisTemplate;
+  private RedisTemplate<String, UserResponseDto> redisTemplate;
 
   @InjectMocks
-  private PaymentCardService paymentCardService;
+  private PaymentCardServiceImpl paymentCardService;
 
   private UUID userId;
   private UUID cardId;
@@ -107,7 +107,7 @@ class PaymentCardServiceTest {
     when(userRepository.countCardsByUserId(userId)).thenReturn(5L);
 
     assertThatThrownBy(() -> paymentCardService.createCard(requestDto))
-        .isInstanceOf(BusinessException.class)
+        .isInstanceOf(CardException.class)
         .hasMessageContaining("maximum count of cards: 5");
 
     verify(paymentCardRepository, never()).save(any());
@@ -155,7 +155,7 @@ class PaymentCardServiceTest {
     Page<PaymentCardResponseDto> result = paymentCardService.getAllCards("KIRILL", true, pageable);
 
     assertThat(result).hasSize(1);
-    assertThat(result.getContent().get(0).getHolder()).isEqualTo("KIRILL MASTEROV");
+    assertThat(result.getContent().getFirst().getHolder()).isEqualTo("KIRILL MASTEROV");
   }
 
   @Test
@@ -180,7 +180,7 @@ class PaymentCardServiceTest {
     List<PaymentCardResponseDto> result = paymentCardService.getCardsByUserId(userId);
 
     assertThat(result).hasSize(1);
-    assertThat(result.get(0).getUserId()).isEqualTo(userId);
+    assertThat(result.getFirst().getUserId()).isEqualTo(userId);
   }
 
   @Test

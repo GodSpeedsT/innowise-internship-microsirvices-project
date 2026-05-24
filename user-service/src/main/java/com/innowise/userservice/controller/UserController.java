@@ -2,7 +2,6 @@ package com.innowise.userservice.controller;
 
 import com.innowise.userservice.dto.UserRequestDto;
 import com.innowise.userservice.dto.UserResponseDto;
-import com.innowise.userservice.dto.UserWithCardsDto;
 import com.innowise.userservice.service.UserService;
 import jakarta.validation.Valid;
 import java.util.UUID;
@@ -30,7 +29,7 @@ public class UserController {
 
   private final UserService userService;
 
-  @PostMapping("/create")
+  @PostMapping
   public ResponseEntity<UserResponseDto> createUser(@Valid @RequestBody UserRequestDto dto) {
     return ResponseEntity
         .status(HttpStatus.CREATED)
@@ -42,41 +41,36 @@ public class UserController {
     return ResponseEntity.ok(userService.getUserById(id));
   }
 
-  @GetMapping("/getAll")
+  @GetMapping
   public ResponseEntity<Page<UserResponseDto>> getAllUsers(
       @RequestParam(required = false) String username,
       @RequestParam(required = false) String surname,
       @RequestParam(required = false) Boolean active,
-      @PageableDefault(size = 10, sort = "username") Pageable pageable
+      @PageableDefault(sort = "username") Pageable pageable
   ) {
     return ResponseEntity.ok(userService.getAllUsers(username, surname, active, pageable));
   }
 
-  @PutMapping("/update/{id}")
+  @GetMapping("/{userId}/cards")
+  public ResponseEntity<UserResponseDto> getUsersWithCards(@PathVariable UUID userId) {
+    return ResponseEntity.ok(userService.getUsersWithCards(userId));
+  }
+
+  @PutMapping("/{id}")
   public ResponseEntity<UserResponseDto> updateUser(
       @PathVariable UUID id,
       @Valid @RequestBody UserRequestDto user) {
     return ResponseEntity.ok(userService.updateUser(id, user));
   }
 
-  @GetMapping("/usersWithCards/{userId}")
-  public ResponseEntity<UserWithCardsDto> getUsersWithCards(@PathVariable UUID userId) {
-    return ResponseEntity.ok(userService.getUsersWithCards(userId));
-  }
-
-  @PatchMapping("/activate/{id}")
-  public ResponseEntity<Void> activate(@PathVariable UUID id) {
-    userService.setActiveStatus(id, true);
+  @PatchMapping("/{id}")
+  public ResponseEntity<Void> setActiveStatus(@PathVariable UUID id,
+      @RequestParam boolean activate) {
+    userService.setActiveStatus(id, activate);
     return ResponseEntity.noContent().build();
   }
 
-  @PatchMapping("/deactivate/{id}")
-  public ResponseEntity<Void> deactivate(@PathVariable UUID id) {
-    userService.setActiveStatus(id, false);
-    return ResponseEntity.noContent().build();
-  }
-
-  @DeleteMapping("/delete/{id}")
+  @DeleteMapping("/{id}")
   public ResponseEntity<Void> deleteUser(@PathVariable UUID id) {
     userService.deleteUser(id);
     return ResponseEntity.noContent().build();

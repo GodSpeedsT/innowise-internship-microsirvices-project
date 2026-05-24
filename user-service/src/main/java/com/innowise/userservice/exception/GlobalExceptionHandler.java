@@ -6,6 +6,7 @@ import java.util.stream.Collectors;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.validation.FieldError;
 import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
@@ -27,8 +28,8 @@ public class GlobalExceptionHandler {
             .build());
   }
 
-  @ExceptionHandler(BusinessException.class)
-  public ResponseEntity<ErrorResponse> handleBusinessException(BusinessException ex) {
+  @ExceptionHandler(CardException.class)
+  public ResponseEntity<ErrorResponse> handleBusinessException(CardException ex) {
     log.warn("Not valid data: {}", ex.getMessage());
     return ResponseEntity
         .status(HttpStatus.CONFLICT)
@@ -46,7 +47,7 @@ public class GlobalExceptionHandler {
         .getFieldErrors()
         .stream()
         .collect(Collectors.toMap(
-            e -> e.getField(),
+            FieldError::getField,
             e -> e.getDefaultMessage(),
             (e1, e2) -> e1 + ", " + e2
         ));
@@ -62,14 +63,13 @@ public class GlobalExceptionHandler {
 
   @ExceptionHandler(Exception.class)
   public ResponseEntity<ErrorResponse> handleException(Exception ex) {
-    log.error("Unexpected error", ex);
+    log.error("Unexpected error: {}", ex.getMessage(), ex);
     return ResponseEntity
         .status(HttpStatus.INTERNAL_SERVER_ERROR)
         .body(ErrorResponse.builder()
-            .message("Internal server error")
+            .message(ex.getMessage())
             .status(HttpStatus.INTERNAL_SERVER_ERROR.value())
             .timestamp(LocalDateTime.now())
             .build());
   }
-
 }

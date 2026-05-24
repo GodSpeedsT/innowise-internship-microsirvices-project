@@ -3,7 +3,6 @@ package com.innowise.userservice.mapper;
 import com.innowise.userservice.dto.PaymentCardResponseDto;
 import com.innowise.userservice.dto.UserRequestDto;
 import com.innowise.userservice.dto.UserResponseDto;
-import com.innowise.userservice.dto.UserWithCardsDto;
 import com.innowise.userservice.entity.User;
 import java.util.List;
 import org.mapstruct.Mapper;
@@ -21,6 +20,7 @@ public interface UserMapper {
 
   @Mapping(source = "id", target = "uuid")
   @Mapping(source = "birthDate", target = "birthday")
+  @Mapping(target = "cards", ignore = true)
   UserResponseDto toResponseDto(User user);
 
   @Mapping(target = "id", ignore = true)
@@ -29,7 +29,9 @@ public interface UserMapper {
   @Mapping(target = "cards", ignore = true)
   void updateUserFromDto(UserRequestDto dto, @MappingTarget User user);
 
-  @Mapping(source = "user", target = "user")
-  @Mapping(source = "cards", target = "cards")
-  UserWithCardsDto toWithCardsDto(User user, List<PaymentCardResponseDto> cards);
+  default UserResponseDto toResponseDtoWithCards(User user, List<PaymentCardResponseDto> cards) {
+    UserResponseDto responseDto = toResponseDto(user);
+    responseDto.setCards(cards);
+    return responseDto;
+  }
 }

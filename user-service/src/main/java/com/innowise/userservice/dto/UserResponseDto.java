@@ -2,6 +2,7 @@ package com.innowise.userservice.dto;
 
 import java.time.LocalDate;
 import java.time.LocalDateTime;
+import java.util.List;
 import java.util.UUID;
 import lombok.Data;
 
@@ -14,6 +15,8 @@ public class UserResponseDto {
   private String email;
   private LocalDate birthday;
   private boolean active;
+  List<PaymentCardResponseDto> cards;
   private LocalDateTime createdAt;
   private LocalDateTime updatedAt;
+
 }

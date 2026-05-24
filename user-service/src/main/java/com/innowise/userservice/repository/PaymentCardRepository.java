@@ -1,12 +1,11 @@
 package com.innowise.userservice.repository;
 
 import com.innowise.userservice.entity.PaymentCard;
+import java.util.Optional;
 import org.springframework.data.repository.query.Param;
 import jakarta.transaction.Transactional;
-import org.springframework.data.domain.Pageable;
 import java.util.List;
 import java.util.UUID;
-import org.springframework.data.domain.Page;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.JpaSpecificationExecutor;
 import org.springframework.data.jpa.repository.Modifying;
@@ -19,10 +18,7 @@ public interface PaymentCardRepository extends JpaRepository<PaymentCard, UUID>,
 
   List<PaymentCard> findByUserId(UUID userId);
 
-  Page<PaymentCard> findByUserId(UUID userId, Pageable pageable);
-
-  @Query(value = "SELECT * FROM payment_cards WHERE holder ILIKE '%' || :holder || '%'", nativeQuery = true)
-  List<PaymentCard> findCardsNative(@Param("holder") String holder);
+  Optional<PaymentCard> findByNumber(String cardNumber);
 
   @Transactional
   @Modifying

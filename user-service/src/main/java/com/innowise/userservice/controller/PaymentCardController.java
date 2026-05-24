@@ -30,7 +30,7 @@ public class PaymentCardController {
 
   private final PaymentCardService paymentCardService;
 
-  @PostMapping("/create")
+  @PostMapping
   public ResponseEntity<PaymentCardResponseDto> createCard(
       @Valid @RequestBody PaymentCardRequestDto paymentCard) {
     return ResponseEntity
@@ -38,46 +38,41 @@ public class PaymentCardController {
         .body(paymentCardService.createCard(paymentCard));
   }
 
-  @GetMapping("/cardById/{id}")
+  @GetMapping("/{id}")
   public ResponseEntity<PaymentCardResponseDto> getCardById(@PathVariable UUID id) {
     return ResponseEntity.ok(paymentCardService.getCardById(id));
   }
 
-  @GetMapping("/cardByUserId/{id}")
-  public ResponseEntity<List<PaymentCardResponseDto>> getCardByUserId(@PathVariable UUID id) {
-    return ResponseEntity.ok(paymentCardService.getCardsByUserId(id));
+  @GetMapping("/user/{userId}")
+  public ResponseEntity<List<PaymentCardResponseDto>> getCardByUserId(@PathVariable UUID userId) {
+    return ResponseEntity.ok(paymentCardService.getCardsByUserId(userId));
   }
 
-  @GetMapping("/getAllCards")
+  @GetMapping
   public ResponseEntity<Page<PaymentCardResponseDto>> getAllCards(
       @RequestParam(required = false) String holder,
       @RequestParam(required = false) Boolean active,
-      @PageableDefault(size = 10) Pageable pageable
+      @PageableDefault Pageable pageable
   ) {
     return ResponseEntity.ok(paymentCardService.getAllCards(holder, active, pageable));
   }
 
-  @PutMapping("/update/{id}")
+  @PutMapping("/{id}")
   public ResponseEntity<PaymentCardResponseDto> updateCard(
       @PathVariable UUID id,
       @Valid @RequestBody PaymentCardRequestDto paymentCard) {
     return ResponseEntity.ok(paymentCardService.updateCard(id, paymentCard));
   }
 
-  @PatchMapping("/activate/{id}")
-  public ResponseEntity<PaymentCardResponseDto> activateCard(@PathVariable UUID id) {
-    paymentCardService.setActiveStatus(id, true);
+  @PatchMapping("/{id}")
+  public ResponseEntity<Void> setActivateStatus(@PathVariable UUID id,
+      @RequestParam Boolean activate) {
+    paymentCardService.setActiveStatus(id, activate);
     return ResponseEntity.noContent().build();
   }
 
-  @PatchMapping("/deactivate/{id}")
-  public ResponseEntity<PaymentCardResponseDto> deactivateCard(@PathVariable UUID id) {
-    paymentCardService.setActiveStatus(id, false);
-    return ResponseEntity.noContent().build();
-  }
-
-  @DeleteMapping("/delete/{id}")
-  public ResponseEntity<PaymentCardResponseDto> deleteCard(@PathVariable UUID id) {
+  @DeleteMapping("/{id}")
+  public ResponseEntity<Void> deleteCard(@PathVariable UUID id) {
     paymentCardService.deleteCard(id);
     return ResponseEntity.noContent().build();
   }

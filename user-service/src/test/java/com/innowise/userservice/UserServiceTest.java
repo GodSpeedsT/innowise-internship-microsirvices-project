@@ -3,39 +3,38 @@ package com.innowise.userservice;
 import com.innowise.userservice.dto.PaymentCardResponseDto;
 import com.innowise.userservice.dto.UserRequestDto;
 import com.innowise.userservice.dto.UserResponseDto;
-import com.innowise.userservice.dto.UserWithCardsDto;
 import com.innowise.userservice.entity.PaymentCard;
 import com.innowise.userservice.entity.User;
-import com.innowise.userservice.exception.BusinessException;
+import com.innowise.userservice.exception.CardException;
 import com.innowise.userservice.exception.ResourceNotFoundException;
 import com.innowise.userservice.mapper.PaymentCardMapper;
 import com.innowise.userservice.mapper.UserMapper;
 import com.innowise.userservice.repository.PaymentCardRepository;
 import com.innowise.userservice.repository.UserRepository;
-import com.innowise.userservice.service.UserService;
-import org.junit.jupiter.api.*;
+import com.innowise.userservice.service.impl.UserServiceImpl;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.DisplayName;
+import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
-import org.mockito.*;
+import org.mockito.InjectMocks;
+import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageImpl;
+import org.springframework.data.domain.PageRequest;
 import org.springframework.data.jpa.domain.Specification;
 import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.data.redis.core.ValueOperations;
+
+import java.time.LocalDate;
 import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
-import org.springframework.data.domain.*;
-import java.time.LocalDate;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
-import static org.mockito.ArgumentMatchers.anyBoolean;
-import static org.mockito.ArgumentMatchers.anyList;
-import static org.mockito.ArgumentMatchers.eq;
-import static org.mockito.Mockito.verify;
-import static org.mockito.Mockito.any;
-import static org.mockito.Mockito.never;
-import static org.mockito.Mockito.verifyNoInteractions;
-import static org.mockito.Mockito.when;
+import static org.mockito.ArgumentMatchers.*;
+import static org.mockito.Mockito.*;
 
 @ExtendWith(MockitoExtension.class)
 class UserServiceTest {
@@ -49,12 +48,12 @@ class UserServiceTest {
   @Mock
   private PaymentCardMapper paymentCardMapper;
   @Mock
-  private RedisTemplate<String, UserWithCardsDto> redisTemplate;
+  private RedisTemplate<String, UserResponseDto> redisTemplate;
   @Mock
-  private ValueOperations<String, UserWithCardsDto> valueOperations;
+  private ValueOperations<String, UserResponseDto> valueOperations;
 
   @InjectMocks
-  private UserService userService;
+  private UserServiceImpl userService;
 
   private UUID userId;
   private User user;
@@ -104,12 +103,12 @@ class UserServiceTest {
   }
 
   @Test
-  @DisplayName("createUser – throws BusinessException when email already exists")
-  void createUser_emailAlreadyExists_throwsBusinessException() {
+  @DisplayName("createUser – throws CardException when email already exists")
+  void createUser_emailAlreadyExists_throwsCardException() {
     when(userRepository.existsByEmail(requestDto.getEmail())).thenReturn(true);
 
     assertThatThrownBy(() -> userService.createUser(requestDto))
-        .isInstanceOf(BusinessException.class)
+        .isInstanceOf(CardException.class)
         .hasMessageContaining("already exists");
 
     verify(userRepository, never()).save(any());
@@ -142,22 +141,22 @@ class UserServiceTest {
     PageRequest pageable = PageRequest.of(0, 10);
     Page<User> userPage = new PageImpl<>(List.of(user));
 
-    when(userRepository.findAll(any(Specification.class), any(PageRequest.class)))
+    when(userRepository.findAll(any(Specification.class), eq(pageable)))
         .thenReturn(userPage);
     when(userMapper.toResponseDto(user)).thenReturn(responseDto);
 
     Page<UserResponseDto> result = userService.getAllUsers("Kirill", null, true, pageable);
 
     assertThat(result.hasContent()).isTrue();
-    assertThat(result.getContent().get(0).getUsername()).isEqualTo("Kirill");
-    verify(userRepository).findAll(any(Specification.class), any(PageRequest.class));
+    assertThat(result.getContent().getFirst().getUsername()).isEqualTo("Kirill");
+    verify(userRepository).findAll(any(Specification.class), eq(pageable));
   }
 
   @Test
   @DisplayName("getAllUsers – returns empty page when no users match filters")
   void getAllUsers_noMatch_returnsEmptyPage() {
     PageRequest pageable = PageRequest.of(0, 10);
-    when(userRepository.findAll(any(Specification.class), any(PageRequest.class)))
+    when(userRepository.findAll(any(Specification.class), eq(pageable)))
         .thenReturn(Page.empty());
 
     Page<UserResponseDto> result = userService.getAllUsers("Unknown", null, null, pageable);
@@ -173,38 +172,32 @@ class UserServiceTest {
 
     PaymentCard card = new PaymentCard();
     PaymentCardResponseDto cardDto = new PaymentCardResponseDto();
+    cardDto.setCardId(UUID.randomUUID());
     cardDto.setUserId(userId);
-
-    UserWithCardsDto expected = new UserWithCardsDto();
-    expected.setUser(responseDto);
-    expected.setCards(List.of(cardDto));
 
     when(userRepository.findById(userId)).thenReturn(Optional.of(user));
     when(paymentCardRepository.findByUserId(userId)).thenReturn(List.of(card));
     when(paymentCardMapper.toResponseDto(card)).thenReturn(cardDto);
-    when(userMapper.toWithCardsDto(eq(user), anyList())).thenReturn(expected);
+    when(userMapper.toResponseDtoWithCards(eq(user), anyList())).thenReturn(responseDto);
+    responseDto.setCards(List.of(cardDto));
 
-    UserWithCardsDto result = userService.getUsersWithCards(userId);
+    UserResponseDto result = userService.getUsersWithCards(userId);
 
-    assertThat(result.getUser()).isEqualTo(responseDto);
+    assertThat(result).isNotNull();
     assertThat(result.getCards()).hasSize(1);
-    verify(valueOperations).set(eq("user-info:" + userId), any(UserWithCardsDto.class), any());
+    verify(valueOperations).set(eq("user-info:" + userId), any(UserResponseDto.class), any());
   }
 
   @Test
   @DisplayName("getUsersWithCards – returns cached value without hitting DB")
   void getUsersWithCards_cacheHit_returnsCachedValue() {
-    UserWithCardsDto cached = new UserWithCardsDto();
-    cached.setUser(responseDto);
-    cached.setCards(List.of());
-
     when(redisTemplate.opsForValue()).thenReturn(valueOperations);
-    when(valueOperations.get("user-info:" + userId)).thenReturn(cached);
+    when(valueOperations.get("user-info:" + userId)).thenReturn(responseDto);
 
-    UserWithCardsDto result = userService.getUsersWithCards(userId);
+    UserResponseDto result = userService.getUsersWithCards(userId);
 
-    assertThat(result).isSameAs(cached);
-    verifyNoInteractions(userRepository);
+    assertThat(result).isSameAs(responseDto);
+    verify(userRepository, never()).findById(any());
   }
 
   @Test
@@ -249,6 +242,7 @@ class UserServiceTest {
   @DisplayName("setActiveStatus – success: calls repository with correct args and evicts cache")
   void setActiveStatus_success() {
     when(userRepository.findById(userId)).thenReturn(Optional.of(user));
+    doNothing().when(userRepository).setActiveStatus(userId, false);
     when(redisTemplate.delete("user-info:" + userId)).thenReturn(true);
 
     userService.setActiveStatus(userId, false);
@@ -272,6 +266,7 @@ class UserServiceTest {
   @DisplayName("deleteUser – success: calls deleteById and evicts cache")
   void deleteUser_success() {
     when(userRepository.findById(userId)).thenReturn(Optional.of(user));
+    doNothing().when(userRepository).deleteById(userId);
     when(redisTemplate.delete("user-info:" + userId)).thenReturn(true);
 
     userService.deleteUser(userId);
