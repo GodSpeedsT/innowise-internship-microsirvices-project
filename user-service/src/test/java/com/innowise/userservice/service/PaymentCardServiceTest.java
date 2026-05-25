@@ -200,7 +200,7 @@ class PaymentCardServiceTest {
   @DisplayName("getCardsByUserId – success: returns list of cards for user")
   void getCardsByUserId_success() {
     when(userRepository.existsById(userId)).thenReturn(true);
-    when(paymentCardRepository.findByUserId(userId)).thenReturn(List.of(card));
+    when(paymentCardRepository.findCardsByUserIdNative(userId)).thenReturn(List.of(card));
     when(paymentCardMapper.toResponseDto(card)).thenReturn(responseDto);
 
     List<PaymentCardResponseDto> result = paymentCardService.getCardsByUserId(userId);
