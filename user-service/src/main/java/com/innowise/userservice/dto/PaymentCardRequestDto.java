@@ -18,7 +18,7 @@ public class PaymentCardRequestDto {
   @Size(max = 100)
   private String holder;
   @NotBlank(message = "Expiration date is required")
-  @Pattern(regexp = "^(0[1-9]|1[0-2])/[0-9]{2}$", message = "Expiration date must be in MM/YY format")
+  @Pattern(regexp = "^(0[1-9]|1[0-2])//d{2}$", message = "Expiration date must be in MM/YY format")
   private String expirationDate;
 
   public LocalDate getExpirationDateAsLocalDate() {

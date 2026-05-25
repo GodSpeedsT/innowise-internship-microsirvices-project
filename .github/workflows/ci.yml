@@ -61,7 +61,7 @@ jobs:
           path: user-service/target/
 
       - name: Run tests & generate JaCoCo report
-        run: mvn clean verify :user-service -am
+        run: mvn clean verify
         working-directory: ./user-service
 
       - name: Upload test + coverage results
