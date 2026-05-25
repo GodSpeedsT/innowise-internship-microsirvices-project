@@ -1,4 +1,4 @@
-package com.innowise.userservice;
+package com.innowise.userservice.service;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
@@ -13,9 +13,10 @@ import com.innowise.userservice.entity.User;
 import com.innowise.userservice.exception.CardException;
 import com.innowise.userservice.exception.ResourceNotFoundException;
 import com.innowise.userservice.mapper.PaymentCardMapper;
-import com.innowise.userservice.repository.PaymentCardRepository;
-import com.innowise.userservice.repository.UserRepository;
+import com.innowise.userservice.dao.PaymentCardRepository;
+import com.innowise.userservice.dao.UserRepository;
 import com.innowise.userservice.service.impl.PaymentCardServiceImpl;
+import java.time.LocalDate;
 import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
@@ -58,18 +59,21 @@ class PaymentCardServiceTest {
     userId = UUID.randomUUID();
     cardId = UUID.randomUUID();
 
-    user = User.builder().id(userId).username("Kirill").build();
+    user = User.builder()
+        .id(userId)
+        .name("Kirill")
+        .build();
 
-    card = new PaymentCard();
-    card.setId(cardId);
-    card.setUser(user);
-    card.setNumber("1234567890123456");
-    card.setHolder("KIRILL MASTEROV");
-    card.setExpirationDate("12/26");
-    card.setActive(true);
+    card = PaymentCard.builder()
+        .id(cardId)
+        .user(user)
+        .number("1234567890123456")
+        .holder("KIRILL MASTEROV")
+        .expirationDate(LocalDate.of(2026, 12, 1))
+        .active(true)
+        .build();
 
     requestDto = new PaymentCardRequestDto();
-    requestDto.setUserId(userId);
     requestDto.setCardNumber("1234567890123456");
     requestDto.setHolder("KIRILL MASTEROV");
     requestDto.setExpirationDate("12/26");
@@ -79,6 +83,7 @@ class PaymentCardServiceTest {
     responseDto.setUserId(userId);
     responseDto.setCardNumber("1234567890123456");
     responseDto.setHolder("KIRILL MASTEROV");
+    responseDto.setExpirationDate("12/26");
     responseDto.setActive(true);
   }
 
@@ -87,26 +92,28 @@ class PaymentCardServiceTest {
   void createCard_success() {
     when(userRepository.findById(userId)).thenReturn(Optional.of(user));
     when(userRepository.countCardsByUserId(userId)).thenReturn(2L);
+    when(paymentCardRepository.findByNumber(requestDto.getCardNumber())).thenReturn(
+        Optional.empty());
     when(paymentCardMapper.toEntity(requestDto)).thenReturn(card);
     when(paymentCardRepository.save(card)).thenReturn(card);
     when(paymentCardMapper.toResponseDto(card)).thenReturn(responseDto);
     when(redisTemplate.delete("user-info:" + userId)).thenReturn(true);
 
-    PaymentCardResponseDto result = paymentCardService.createCard(requestDto);
+    PaymentCardResponseDto result = paymentCardService.createCard(userId, requestDto);
 
     assertThat(result).isNotNull();
-    assertThat(result.getUserId()).isEqualTo(userId);
+    assertThat(result.getCardNumber()).isEqualTo("1234567890123456");
     verify(paymentCardRepository).save(card);
     verify(redisTemplate).delete("user-info:" + userId);
   }
 
   @Test
-  @DisplayName("createCard – throws BusinessException when card limit reached (5)")
-  void createCard_limitReached_throwsBusinessException() {
+  @DisplayName("createCard – throws CardException when card limit reached 5")
+  void createCard_limitReached_throwsCardException() {
     when(userRepository.findById(userId)).thenReturn(Optional.of(user));
     when(userRepository.countCardsByUserId(userId)).thenReturn(5L);
 
-    assertThatThrownBy(() -> paymentCardService.createCard(requestDto))
+    assertThatThrownBy(() -> paymentCardService.createCard(userId, requestDto))
         .isInstanceOf(CardException.class)
         .hasMessageContaining("maximum count of cards: 5");
 
@@ -114,12 +121,29 @@ class PaymentCardServiceTest {
   }
 
   @Test
+  @DisplayName("createCard – throws CardException when card number already exists")
+  void createCard_cardNumberExists_throwsCardException() {
+    when(userRepository.findById(userId)).thenReturn(Optional.of(user));
+    when(userRepository.countCardsByUserId(userId)).thenReturn(2L);
+    when(paymentCardRepository.findByNumber(requestDto.getCardNumber())).thenReturn(
+        Optional.of(card));
+
+    assertThatThrownBy(() -> paymentCardService.createCard(userId, requestDto))
+        .isInstanceOf(CardException.class)
+        .hasMessageContaining("Card number already in use");
+
+    verify(paymentCardRepository, never()).save(any());
+  }
+
+
+  @Test
   @DisplayName("createCard – throws ResourceNotFoundException when user does not exist")
   void createCard_userNotFound_throwsResourceNotFoundException() {
     when(userRepository.findById(userId)).thenReturn(Optional.empty());
 
-    assertThatThrownBy(() -> paymentCardService.createCard(requestDto))
-        .isInstanceOf(ResourceNotFoundException.class);
+    assertThatThrownBy(() -> paymentCardService.createCard(userId, requestDto))
+        .isInstanceOf(ResourceNotFoundException.class)
+        .hasMessageContaining("User with id " + userId + " not found");
   }
 
   @Test
@@ -152,7 +176,8 @@ class PaymentCardServiceTest {
         .thenReturn(cardPage);
     when(paymentCardMapper.toResponseDto(card)).thenReturn(responseDto);
 
-    Page<PaymentCardResponseDto> result = paymentCardService.getAllCards("KIRILL", true, pageable);
+    Page<PaymentCardResponseDto> result = paymentCardService.getAllCards("KIRILL", "MASTEROV", true,
+        pageable);
 
     assertThat(result).hasSize(1);
     assertThat(result.getContent().getFirst().getHolder()).isEqualTo("KIRILL MASTEROV");
@@ -165,7 +190,8 @@ class PaymentCardServiceTest {
     when(paymentCardRepository.findAll(any(Specification.class), any(PageRequest.class)))
         .thenReturn(Page.empty());
 
-    Page<PaymentCardResponseDto> result = paymentCardService.getAllCards(null, null, pageable);
+    Page<PaymentCardResponseDto> result = paymentCardService.getAllCards(null, null, null,
+        pageable);
 
     assertThat(result).isEmpty();
   }

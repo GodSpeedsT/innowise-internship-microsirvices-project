@@ -12,13 +12,13 @@ databaseChangeLog:
             tableName: users
             columns:
               - column:
-                  name: user_id
+                  name: id
                   type: uuid
                   constraints:
                     primaryKey: true
                     nullable: false
               - column:
-                  name: username
+                  name: name
                   type: varchar(100)
                   constraints:
                     nullable: false
@@ -31,7 +31,7 @@ databaseChangeLog:
                   name: email
                   type: varchar(100)
                   constraints:
-                    nullable: true
+                    nullable: false
                     unique: true
               - column:
                   name: birth_date
@@ -67,7 +67,7 @@ databaseChangeLog:
             tableName: payment_cards
             columns:
               - column:
-                  name: card_id
+                  name: id
                   type: uuid
                   constraints:
                     primaryKey: true
@@ -77,9 +77,9 @@ databaseChangeLog:
                   name: user_id
                   type: uuid
                   constraints:
-                    foreignKeyName: fk_payment_card_user
+                    foreignKeyName: fk_cards_users
                     referencedTableName: users
-                    referencedColumnNames: user_id
+                    referencedColumnNames: id
                     nullable: false
               - column:
                   name: card_number
@@ -94,7 +94,7 @@ databaseChangeLog:
                     nullable: false
               - column:
                   name: expiration_date
-                  type: varchar(7)
+                  type: date
                   constraints:
                     nullable: false
               - column:
@@ -126,10 +126,10 @@ databaseChangeLog:
                   name: email
         - createIndex:
             tableName: users
-            indexName: idx_user_username
+            indexName: idx_user_name
             columns:
               - column:
-                  name: username
+                  name: name
         - createIndex:
             tableName: payment_cards
             indexName: idx_user_id

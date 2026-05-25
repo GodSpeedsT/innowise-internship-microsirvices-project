@@ -10,12 +10,12 @@ import lombok.Data;
 public class UserResponseDto {
 
   private UUID uuid;
-  private String username;
+  private String name;
   private String surname;
   private String email;
   private LocalDate birthday;
   private boolean active;
-  List<PaymentCardResponseDto> cards;
+  private List<PaymentCardResponseDto> cards;
   private LocalDateTime createdAt;
   private LocalDateTime updatedAt;
 

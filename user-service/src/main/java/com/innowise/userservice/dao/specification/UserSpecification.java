@@ -1,4 +1,4 @@
-package com.innowise.userservice.repository;
+package com.innowise.userservice.dao.specification;
 
 import com.innowise.userservice.entity.User;
 import java.util.ArrayList;
@@ -9,13 +9,13 @@ import org.springframework.data.jpa.domain.Specification;
 
 public class UserSpecification {
 
-  public static Specification<User> filterByUsernameAndSurname(String username, String surname) {
+  public static Specification<User> filterByNameAndSurname(String name, String surname) {
     return ((root, query, criteriaBuilder) -> {
       List<Predicate> predicates = new ArrayList<>();
-      if (username != null && !username.isBlank()) {
+      if (name != null && !name.isBlank()) {
         predicates.add(criteriaBuilder.like(
-            criteriaBuilder.lower(root.get("username")),
-            "%" + username.toLowerCase() + "%"
+            criteriaBuilder.lower(root.get("name")),
+            "%" + name.toLowerCase() + "%"
         ));
       }
       if (surname != null && !surname.isBlank()) {

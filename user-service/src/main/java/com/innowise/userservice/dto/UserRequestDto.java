@@ -14,7 +14,7 @@ public class UserRequestDto {
 
   @NotBlank(message = "Name is required")
   @Size(max = 50)
-  private String username;
+  private String name;
   @NotBlank(message = "Surname is required")
   @Size(max = 50)
   private String surname;

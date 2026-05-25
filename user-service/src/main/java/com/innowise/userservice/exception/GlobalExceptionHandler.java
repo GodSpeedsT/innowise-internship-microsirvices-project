@@ -30,7 +30,18 @@ public class GlobalExceptionHandler {
 
   @ExceptionHandler(CardException.class)
   public ResponseEntity<ErrorResponse> handleBusinessException(CardException ex) {
-    log.warn("Not valid data: {}", ex.getMessage());
+    log.warn("Card business rule violation: {}", ex.getMessage());
+    return ResponseEntity
+        .status(HttpStatus.CONFLICT)
+        .body(ErrorResponse.builder()
+            .message(ex.getMessage())
+            .status(HttpStatus.CONFLICT.value())
+            .timestamp(LocalDateTime.now())
+            .build());
+  }
+
+  @ExceptionHandler(DuplicateEmailException.class)
+  public ResponseEntity<ErrorResponse> handleDuplicateEmailException(DuplicateEmailException ex) {
     return ResponseEntity
         .status(HttpStatus.CONFLICT)
         .body(ErrorResponse.builder()

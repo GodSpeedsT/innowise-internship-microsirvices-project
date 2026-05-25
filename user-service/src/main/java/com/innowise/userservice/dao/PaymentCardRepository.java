@@ -1,4 +1,4 @@
-package com.innowise.userservice.repository;
+package com.innowise.userservice.dao;
 
 import com.innowise.userservice.entity.PaymentCard;
 import java.util.Optional;
@@ -19,6 +19,9 @@ public interface PaymentCardRepository extends JpaRepository<PaymentCard, UUID>,
   List<PaymentCard> findByUserId(UUID userId);
 
   Optional<PaymentCard> findByNumber(String cardNumber);
+
+  @Query(value = "SELECT * FROM payment_cards WHERE user_id = :userId", nativeQuery = true)
+  List<PaymentCard> findCardsByUserIdNative(@Param("userId") UUID userId);
 
   @Transactional
   @Modifying

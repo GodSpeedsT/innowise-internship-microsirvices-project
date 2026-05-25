@@ -8,9 +8,9 @@ import com.innowise.userservice.entity.User;
 import com.innowise.userservice.exception.CardException;
 import com.innowise.userservice.exception.ResourceNotFoundException;
 import com.innowise.userservice.mapper.PaymentCardMapper;
-import com.innowise.userservice.repository.PaymentCardRepository;
-import com.innowise.userservice.repository.PaymentCardSpecification;
-import com.innowise.userservice.repository.UserRepository;
+import com.innowise.userservice.dao.PaymentCardRepository;
+import com.innowise.userservice.dao.specification.PaymentCardSpecification;
+import com.innowise.userservice.dao.UserRepository;
 import com.innowise.userservice.service.PaymentCardService;
 import java.util.List;
 import java.util.UUID;
@@ -35,12 +35,13 @@ public class PaymentCardServiceImpl implements PaymentCardService {
   private final RedisTemplate<String, UserResponseDto> redisTemplate;
 
   @Transactional
-  public PaymentCardResponseDto createCard(PaymentCardRequestDto dto) {
-    User user = userRepository.findById(dto.getUserId())
-        .orElseThrow(
-            () -> new ResourceNotFoundException("User with id " + dto.getUserId() + " not found"));
+  public PaymentCardResponseDto createCard(UUID userId, PaymentCardRequestDto dto) {
 
-    long cardCount = userRepository.countCardsByUserId(dto.getUserId());
+    User user = userRepository.findById(userId)
+        .orElseThrow(
+            () -> new ResourceNotFoundException("User with id " + userId + " not found"));
+
+    long cardCount = userRepository.countCardsByUserId(userId);
     if (cardCount >= MAX_CARDS_PER_USER) {
       throw new CardException("User already has maximum count of cards: " + MAX_CARDS_PER_USER);
     }
@@ -51,7 +52,7 @@ public class PaymentCardServiceImpl implements PaymentCardService {
     card.setUser(user);
     card.setActive(true);
 
-    evictCacheUser(dto.getUserId());
+    evictCacheUser(userId);
     return paymentCardMapper.toResponseDto(paymentCardRepository.save(card));
   }
 
@@ -59,9 +60,9 @@ public class PaymentCardServiceImpl implements PaymentCardService {
     return paymentCardMapper.toResponseDto(findCardOrThrow(id));
   }
 
-  public Page<PaymentCardResponseDto> getAllCards(String holder, Boolean active,
+  public Page<PaymentCardResponseDto> getAllCards(String name, String surname, Boolean active,
       Pageable pageable) {
-    Specification<PaymentCard> spec = PaymentCardSpecification.filterHolder(holder)
+    Specification<PaymentCard> spec = PaymentCardSpecification.hasUserFirstAndSurname(name, surname)
         .and(PaymentCardSpecification.filterByActive(active));
     return paymentCardRepository.findAll(spec, pageable)
         .map(paymentCardMapper::toResponseDto);
@@ -71,7 +72,8 @@ public class PaymentCardServiceImpl implements PaymentCardService {
     if (!userRepository.existsById(userId)) {
       throw new ResourceNotFoundException("User with id " + userId + " not found");
     }
-    return paymentCardRepository.findByUserId(userId).stream()
+    List<PaymentCard> cards = paymentCardRepository.findCardsByUserIdNative(userId);
+    return cards.stream()
         .map(paymentCardMapper::toResponseDto)
         .toList();
   }

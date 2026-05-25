@@ -5,13 +5,13 @@ import com.innowise.userservice.dto.UserRequestDto;
 import com.innowise.userservice.dto.UserResponseDto;
 import com.innowise.userservice.entity.PaymentCard;
 import com.innowise.userservice.entity.User;
-import com.innowise.userservice.exception.CardException;
+import com.innowise.userservice.exception.DuplicateEmailException;
 import com.innowise.userservice.exception.ResourceNotFoundException;
 import com.innowise.userservice.mapper.PaymentCardMapper;
 import com.innowise.userservice.mapper.UserMapper;
-import com.innowise.userservice.repository.PaymentCardRepository;
-import com.innowise.userservice.repository.UserRepository;
-import com.innowise.userservice.repository.UserSpecification;
+import com.innowise.userservice.dao.PaymentCardRepository;
+import com.innowise.userservice.dao.UserRepository;
+import com.innowise.userservice.dao.specification.UserSpecification;
 import com.innowise.userservice.service.UserService;
 import java.time.Duration;
 import java.util.List;
@@ -42,7 +42,7 @@ public class UserServiceImpl implements UserService {
   @Transactional
   public UserResponseDto createUser(UserRequestDto dto) {
     if (userRepository.existsByEmail(dto.getEmail())) {
-      throw new CardException("User with email '" + dto.getEmail() + "' already exists");
+      throw new DuplicateEmailException("User with email '" + dto.getEmail() + "' already exists");
     }
     User user = userMapper.toEntity(dto);
     user.setActive(true);
@@ -53,15 +53,22 @@ public class UserServiceImpl implements UserService {
     return userMapper.toResponseDto(findUserOrThrow(id));
   }
 
+  public List<UserResponseDto> findUsersByNameAndSurname(String name, String surname) {
+    List<User> users = userRepository.findUsersByNameAndSurnameNative(name, surname);
+    return users.stream()
+        .map(userMapper::toResponseDto)
+        .toList();
+  }
+
   public Page<UserResponseDto> getAllUsers(String name, String surname, Boolean active,
       Pageable pageable) {
-    Specification<User> spec = UserSpecification.filterByUsernameAndSurname(name, surname)
+    Specification<User> spec = UserSpecification.filterByNameAndSurname(name, surname)
         .and(UserSpecification.filterByActive(active));
     return userRepository.findAll(spec, pageable)
         .map(userMapper::toResponseDto);
   }
 
-  public UserResponseDto getUsersWithCards(UUID id) {
+  public UserResponseDto getUserWithCards(UUID id) {
     var cacheId = CACHE_NAME + id;
     UserResponseDto fromCache = redisTemplate.opsForValue().get(cacheId);
     if (fromCache != null) {
@@ -93,13 +100,6 @@ public class UserServiceImpl implements UserService {
   public void setActiveStatus(UUID id, Boolean active) {
     findUserOrThrow(id);
     userRepository.setActiveStatus(id, active);
-    evictCacheUser(id);
-  }
-
-  @Transactional
-  public void deleteUser(UUID id) {
-    findUserOrThrow(id);
-    userRepository.deleteById(id);
     evictCacheUser(id);
   }
 

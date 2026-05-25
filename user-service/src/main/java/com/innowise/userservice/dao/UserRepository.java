@@ -1,6 +1,7 @@
-package com.innowise.userservice.repository;
+package com.innowise.userservice.dao;
 
 import com.innowise.userservice.entity.User;
+import java.util.List;
 import org.springframework.data.repository.query.Param;
 import jakarta.transaction.Transactional;
 import java.util.UUID;
@@ -14,6 +15,9 @@ import org.springframework.stereotype.Repository;
 public interface UserRepository extends JpaRepository<User, UUID>, JpaSpecificationExecutor<User> {
 
   boolean existsByEmail(String email);
+
+  @Query(value = "SELECT * FROM users WHERE name ILIKE %:name% AND surname ILIKE %:surname%", nativeQuery = true)
+  List<User> findUsersByNameAndSurnameNative(@Param("name") String name, @Param("surname") String surname);
 
   @Modifying
   @Transactional

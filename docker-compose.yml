@@ -3,7 +3,7 @@ services:
     container_name: users_db
     image: postgres:latest
     environment:
-      POSTGRES_USER: ${USER_DB_USERNAME}
+      POSTGRES_USER: ${USERS_DB_USERNAME}
       POSTGRES_PASSWORD: ${USERS_DB_PASSWORD}
       POSTGRES_DB: ${USERS_DB_DATABASE}
     ports:
@@ -57,16 +57,17 @@ services:
   user-service:
     container_name: user_service
     build:
-      context: /user-service
+      context: ./user-service
       dockerfile: Dockerfile
     ports:
       - "8081:8081"
     environment:
       SPRING_PROFILES_ACTIVE: docker
-      USERS_DB_DATABASE: kirill
-      USER_DB_USERNAME: kirill
-      USERS_DB_PASSWORD: password
-      REDIS_HOST: localhost
+      USERS_DB_HOST: localhost
+      USERS_DB_DATABASE: user_db
+      USERS_DB_USERNAME: postgres
+      USERS_DB_PASSWORD: postgres
+      REDIS_HOST: users_redis
       REDIS_DATABASE: 0
     depends_on:
       - users_db

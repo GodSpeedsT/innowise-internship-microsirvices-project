@@ -3,6 +3,7 @@ package com.innowise.userservice.entity;
 import jakarta.persistence.CascadeType;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
+import jakarta.persistence.EntityListeners;
 import jakarta.persistence.FetchType;
 import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.GenerationType;
@@ -20,8 +21,9 @@ import lombok.Builder;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
-import org.hibernate.annotations.CreationTimestamp;
-import org.hibernate.annotations.UpdateTimestamp;
+import org.springframework.data.annotation.CreatedDate;
+import org.springframework.data.annotation.LastModifiedDate;
+import org.springframework.data.jpa.domain.support.AuditingEntityListener;
 
 @Entity
 @Getter
@@ -29,19 +31,20 @@ import org.hibernate.annotations.UpdateTimestamp;
 @AllArgsConstructor
 @NoArgsConstructor
 @Builder
+@EntityListeners(AuditingEntityListener.class)
 @Table(name = "users", indexes = {
     @Index(name = "idx_user_email", columnList = "email"),
-    @Index(name = "idx_user_username", columnList = "username"),
+    @Index(name = "idx_user_name", columnList = "name"),
     @Index(name = "idx_user_active", columnList = "active")
 })
 public class User {
 
   @Id
   @GeneratedValue(strategy = GenerationType.UUID)
-  @Column(name = "user_id", unique = true, nullable = false, updatable = false)
+  @Column(name = "id", unique = true, nullable = false, updatable = false)
   private UUID id;
-  @Column(name = "username", unique = true, nullable = false)
-  private String username;
+  @Column(name = "name", nullable = false)
+  private String name;
   @Column(name = "surname", nullable = false)
   private String surname;
   @Column(name = "email", unique = true, nullable = false)
@@ -50,11 +53,11 @@ public class User {
   private LocalDate birthDate;
   @Column(name = "active", nullable = false)
   private boolean active = true;
+  @CreatedDate
   @Column(name = "created_at", nullable = false, updatable = false)
-  @CreationTimestamp
   private LocalDateTime createdAt;
+  @LastModifiedDate
   @Column(name = "updated_at", nullable = false)
-  @UpdateTimestamp
   private LocalDateTime updatedAt;
   @OneToMany(
       mappedBy = "user",

@@ -2,9 +2,9 @@ spring:
   application:
     name: user-service
   datasource:
-    url: jdbc:postgresql://localhost:5432/${USERS_DB_DATABASE:kirill}
-    username: ${USER_DB_USERNAME:kirill}
-    password: ${USERS_DB_PASSWORD:password}
+    url: jdbc:postgresql://${USERS_DB_HOST:localhost}:${USERS_DB_PORT:5432}/${USERS_DB_DATABASE:user_db}
+    username: ${USERS_DB_USERNAME:postgres}
+    password: ${USERS_DB_PASSWORD:postgres}
   jpa:
     hibernate:
       ddl-auto: validate

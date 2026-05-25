@@ -1,16 +1,16 @@
-package com.innowise.userservice;
+package com.innowise.userservice.service;
 
 import com.innowise.userservice.dto.PaymentCardResponseDto;
 import com.innowise.userservice.dto.UserRequestDto;
 import com.innowise.userservice.dto.UserResponseDto;
 import com.innowise.userservice.entity.PaymentCard;
 import com.innowise.userservice.entity.User;
-import com.innowise.userservice.exception.CardException;
+import com.innowise.userservice.exception.DuplicateEmailException;
 import com.innowise.userservice.exception.ResourceNotFoundException;
 import com.innowise.userservice.mapper.PaymentCardMapper;
 import com.innowise.userservice.mapper.UserMapper;
-import com.innowise.userservice.repository.PaymentCardRepository;
-import com.innowise.userservice.repository.UserRepository;
+import com.innowise.userservice.dao.PaymentCardRepository;
+import com.innowise.userservice.dao.UserRepository;
 import com.innowise.userservice.service.impl.UserServiceImpl;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
@@ -66,7 +66,7 @@ class UserServiceTest {
 
     user = User.builder()
         .id(userId)
-        .username("Kirill")
+        .name("Kirill")
         .surname("Masterov")
         .email("masterov_k@bk.ru")
         .birthDate(LocalDate.of(2000, 1, 12))
@@ -74,14 +74,14 @@ class UserServiceTest {
         .build();
 
     requestDto = new UserRequestDto();
-    requestDto.setUsername("Kirill");
+    requestDto.setName("Kirill");
     requestDto.setSurname("Masterov");
     requestDto.setEmail("masterov_k@bk.ru");
     requestDto.setBirthDate(LocalDate.of(2000, 1, 12));
 
     responseDto = new UserResponseDto();
     responseDto.setUuid(userId);
-    responseDto.setUsername("Kirill");
+    responseDto.setName("Kirill");
     responseDto.setSurname("Masterov");
     responseDto.setEmail("masterov_k@bk.ru");
     responseDto.setActive(true);
@@ -103,12 +103,12 @@ class UserServiceTest {
   }
 
   @Test
-  @DisplayName("createUser – throws CardException when email already exists")
-  void createUser_emailAlreadyExists_throwsCardException() {
+  @DisplayName("createUser – throws DuplicateEmailException when email already exists")
+  void createUser_emailAlreadyExists_throwsDuplicateEmailException() {
     when(userRepository.existsByEmail(requestDto.getEmail())).thenReturn(true);
 
     assertThatThrownBy(() -> userService.createUser(requestDto))
-        .isInstanceOf(CardException.class)
+        .isInstanceOf(DuplicateEmailException.class)
         .hasMessageContaining("already exists");
 
     verify(userRepository, never()).save(any());
@@ -148,7 +148,7 @@ class UserServiceTest {
     Page<UserResponseDto> result = userService.getAllUsers("Kirill", null, true, pageable);
 
     assertThat(result.hasContent()).isTrue();
-    assertThat(result.getContent().getFirst().getUsername()).isEqualTo("Kirill");
+    assertThat(result.getContent().getFirst().getName()).isEqualTo("Kirill");
     verify(userRepository).findAll(any(Specification.class), eq(pageable));
   }
 
@@ -181,7 +181,7 @@ class UserServiceTest {
     when(userMapper.toResponseDtoWithCards(eq(user), anyList())).thenReturn(responseDto);
     responseDto.setCards(List.of(cardDto));
 
-    UserResponseDto result = userService.getUsersWithCards(userId);
+    UserResponseDto result = userService.getUserWithCards(userId);
 
     assertThat(result).isNotNull();
     assertThat(result.getCards()).hasSize(1);
@@ -189,25 +189,25 @@ class UserServiceTest {
   }
 
   @Test
-  @DisplayName("getUsersWithCards – returns cached value without hitting DB")
+  @DisplayName("getUserWithCards – returns cached value without hitting DB")
   void getUsersWithCards_cacheHit_returnsCachedValue() {
     when(redisTemplate.opsForValue()).thenReturn(valueOperations);
     when(valueOperations.get("user-info:" + userId)).thenReturn(responseDto);
 
-    UserResponseDto result = userService.getUsersWithCards(userId);
+    UserResponseDto result = userService.getUserWithCards(userId);
 
     assertThat(result).isSameAs(responseDto);
     verify(userRepository, never()).findById(any());
   }
 
   @Test
-  @DisplayName("getUsersWithCards – throws ResourceNotFoundException when user not found")
+  @DisplayName("getUserWithCards – throws ResourceNotFoundException when user not found")
   void getUsersWithCards_userNotFound_throwsException() {
     when(redisTemplate.opsForValue()).thenReturn(valueOperations);
     when(valueOperations.get("user-info:" + userId)).thenReturn(null);
     when(userRepository.findById(userId)).thenReturn(Optional.empty());
 
-    assertThatThrownBy(() -> userService.getUsersWithCards(userId))
+    assertThatThrownBy(() -> userService.getUserWithCards(userId))
         .isInstanceOf(ResourceNotFoundException.class);
   }
 
@@ -260,29 +260,5 @@ class UserServiceTest {
         .isInstanceOf(ResourceNotFoundException.class);
 
     verify(userRepository, never()).setActiveStatus(any(), anyBoolean());
-  }
-
-  @Test
-  @DisplayName("deleteUser – success: calls deleteById and evicts cache")
-  void deleteUser_success() {
-    when(userRepository.findById(userId)).thenReturn(Optional.of(user));
-    doNothing().when(userRepository).deleteById(userId);
-    when(redisTemplate.delete("user-info:" + userId)).thenReturn(true);
-
-    userService.deleteUser(userId);
-
-    verify(userRepository).deleteById(userId);
-    verify(redisTemplate).delete("user-info:" + userId);
-  }
-
-  @Test
-  @DisplayName("deleteUser – throws ResourceNotFoundException when user not found")
-  void deleteUser_notFound_throwsResourceNotFoundException() {
-    when(userRepository.findById(userId)).thenReturn(Optional.empty());
-
-    assertThatThrownBy(() -> userService.deleteUser(userId))
-        .isInstanceOf(ResourceNotFoundException.class);
-
-    verify(userRepository, never()).deleteById(any());
   }
 }
