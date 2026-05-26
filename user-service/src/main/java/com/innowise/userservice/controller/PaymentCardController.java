@@ -32,7 +32,6 @@ public class PaymentCardController {
     return ResponseEntity.ok(paymentCardService.getCardById(id));
   }
 
-
   @GetMapping
   public ResponseEntity<Page<PaymentCardResponseDto>> getAllCards(
       @RequestParam(required = false) String name,

@@ -83,10 +83,9 @@ public class PaymentCardServiceImpl implements PaymentCardService {
     PaymentCard card = findCardOrThrow(id);
     UUID userId = card.getUser().getId();
     paymentCardMapper.updateCardFromDto(dto, card);
-    PaymentCardResponseDto response = paymentCardMapper.toResponseDto(
-        paymentCardRepository.save(card));
     evictCacheUser(userId);
-    return response;
+    paymentCardRepository.flush();
+    return paymentCardMapper.toResponseDto(card);
   }
 
   @Transactional

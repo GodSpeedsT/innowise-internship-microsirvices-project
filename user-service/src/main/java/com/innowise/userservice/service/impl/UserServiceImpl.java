@@ -93,7 +93,8 @@ public class UserServiceImpl implements UserService {
     User user = findUserOrThrow(id);
     userMapper.updateUserFromDto(dto, user);
     evictCacheUser(id);
-    return userMapper.toResponseDto(userRepository.save(user));
+    userRepository.flush();
+    return userMapper.toResponseDto(user);
   }
 
   @Transactional
