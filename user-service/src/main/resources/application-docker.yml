@@ -1,0 +1,37 @@
+spring:
+  datasource:
+    url: jdbc:postgresql://users_db:5432/${USERS_DB_DATABASE:user_db}
+    username: ${USERS_DB_USERNAME:postgres}
+    password: ${USERS_DB_PASSWORD:postgres}
+  jpa:
+    hibernate:
+      ddl-auto: validate
+    show-sql: true
+    database-platform: org.hibernate.dialect.PostgreSQLDialect
+
+  liquibase:
+    change-log: classpath:/db/changelog/changelog-root.yaml
+    enabled: true
+
+  data:
+    redis:
+      host: users_redis
+      port: 6379
+      timeout: 5000ms
+      database: ${REDIS_DATABASE:0}
+      client-type: lettuce
+      lettuce:
+        pool:
+          max-active: 8
+          max-idle: 8
+          min-idle: 0
+          max-wait: -1ms
+
+server:
+  port: 8081
+
+logging:
+  level:
+    com.innowise.userservice: DEBUG
+    org.springframework.web: DEBUG
+    root: INFO

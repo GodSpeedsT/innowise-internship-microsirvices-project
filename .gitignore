@@ -1,2 +1,5 @@
-.idea
-.env
+**/.idea/
+**/.env
+*.class
+*.jar
+**/target/
