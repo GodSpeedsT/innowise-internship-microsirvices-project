@@ -17,9 +17,11 @@ spring:
     change-log: classpath:/db/changelog/changelog-root.yaml
 
 jwt:
-  secret: "4f7V9xP2wL3kQ8mN5jC1bZ6vY4rX7tH0gD9sF3aC8nL2kM1pW4xV7bN9mZ3lK6jH"
   access-expiration-ms: 900000
   refresh-expiration-ms: 604800000
+
+user-service:
+  url: http://localhost:8081
 
 server:
   port: 8085

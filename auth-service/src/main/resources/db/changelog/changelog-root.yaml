@@ -1,4 +1,3 @@
 databaseChangeLog:
-  - includeAll:
-      path: db/changelog
-      relativeToChangelogFile: true
+  - include:
+      file: db/changelog/changelog-tables.yaml
