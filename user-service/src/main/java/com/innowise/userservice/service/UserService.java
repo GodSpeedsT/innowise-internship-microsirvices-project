@@ -1,7 +1,8 @@
 package com.innowise.userservice.service;
 
-import com.innowise.userservice.dto.UserRequestDto;
+import com.innowise.userservice.dto.UserCreateDto;
 import com.innowise.userservice.dto.UserResponseDto;
+import com.innowise.userservice.dto.UserUpdateDto;
 import com.innowise.userservice.exception.DuplicateEmailException;
 import com.innowise.userservice.exception.ResourceNotFoundException;
 import java.util.List;
@@ -16,7 +17,7 @@ public interface UserService {
    * @return the created user response data
    * @throws DuplicateEmailException if a user with the given email already exists
    */
-  UserResponseDto createUser(UserRequestDto dto);
+  UserResponseDto createUser(UserCreateDto dto);
 
   /**
    * @param id the unique identifier of the user
@@ -51,7 +52,7 @@ public interface UserService {
    * @return the updated user data
    * @throws ResourceNotFoundException if the user does not exist
    */
-  UserResponseDto updateUser(UUID id, UserRequestDto dto);
+  UserResponseDto updateUser(UUID id, UserUpdateDto dto);
 
   /**
    * Activates or deactivates a user account (Soft Delete pattern).

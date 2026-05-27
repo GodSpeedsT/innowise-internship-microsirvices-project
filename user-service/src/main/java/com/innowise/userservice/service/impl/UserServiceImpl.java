@@ -1,8 +1,9 @@
 package com.innowise.userservice.service.impl;
 
 import com.innowise.userservice.dto.PaymentCardResponseDto;
-import com.innowise.userservice.dto.UserRequestDto;
+import com.innowise.userservice.dto.UserCreateDto;
 import com.innowise.userservice.dto.UserResponseDto;
+import com.innowise.userservice.dto.UserUpdateDto;
 import com.innowise.userservice.entity.PaymentCard;
 import com.innowise.userservice.entity.User;
 import com.innowise.userservice.exception.DuplicateEmailException;
@@ -40,10 +41,11 @@ public class UserServiceImpl implements UserService {
 
 
   @Transactional
-  public UserResponseDto createUser(UserRequestDto dto) {
+  public UserResponseDto createUser(UserCreateDto dto) {
     if (userRepository.existsByEmail(dto.getEmail())) {
       throw new DuplicateEmailException("User with email '" + dto.getEmail() + "' already exists");
     }
+
     User user = userMapper.toEntity(dto);
     user.setActive(true);
     return userMapper.toResponseDto(userRepository.save(user));
@@ -89,7 +91,7 @@ public class UserServiceImpl implements UserService {
   }
 
   @Transactional
-  public UserResponseDto updateUser(UUID id, UserRequestDto dto) {
+  public UserResponseDto updateUser(UUID id, UserUpdateDto dto) {
     User user = findUserOrThrow(id);
     userMapper.updateUserFromDto(dto, user);
     evictCacheUser(id);

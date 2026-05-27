@@ -7,11 +7,14 @@ import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Past;
 import jakarta.validation.constraints.Size;
 import java.time.LocalDate;
+import java.util.UUID;
 import lombok.Data;
 
 @Data
-public class UserRequestDto {
+public class UserCreateDto {
 
+  @NotNull(message = "id is required")
+  private UUID id;
   @NotBlank(message = "Name is required")
   @Size(max = 50)
   private String name;
