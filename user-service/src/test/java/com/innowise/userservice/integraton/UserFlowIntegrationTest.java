@@ -17,6 +17,7 @@ import com.innowise.userservice.entity.PaymentCard;
 import com.innowise.userservice.entity.User;
 import com.innowise.userservice.dao.PaymentCardRepository;
 import com.innowise.userservice.dao.UserRepository;
+import jakarta.servlet.Filter;
 import java.time.LocalDate;
 import java.util.List;
 import java.util.UUID;
@@ -32,6 +33,7 @@ import org.springframework.boot.test.context.SpringBootTest.WebEnvironment;
 import org.springframework.boot.webmvc.test.autoconfigure.AutoConfigureWebMvc;
 import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.http.MediaType;
+import org.springframework.security.test.context.support.WithMockUser;
 import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.context.DynamicPropertyRegistry;
 import org.springframework.test.context.DynamicPropertySource;
@@ -49,6 +51,7 @@ import tools.jackson.databind.ObjectMapper;
 @AutoConfigureWebMvc
 @Testcontainers
 @ActiveProfiles("test")
+@WithMockUser(roles = "ADMIN")
 class UserFlowIntegrationTest {
 
   @Container
@@ -62,6 +65,8 @@ class UserFlowIntegrationTest {
   @SuppressWarnings("resource")
   static GenericContainer<?> redis = new GenericContainer<>("redis:latest")
       .withExposedPorts(6379);
+  @Autowired
+  private Filter springSecurityFilterChain;
 
   @DynamicPropertySource
   static void configureProperties(DynamicPropertyRegistry registry) {
