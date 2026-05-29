@@ -13,6 +13,12 @@ spring:
     change-log: classpath:/db/changelog/changelog-root.yaml
     enabled: true
 
+  security:
+    oauth2:
+      resourceserver:
+        jwt:
+          jwk-set-uri: http://localhost:8085/api/v1/auth/jwks
+
   data:
     redis:
       host: localhost

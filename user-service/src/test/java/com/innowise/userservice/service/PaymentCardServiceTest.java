@@ -222,7 +222,6 @@ class PaymentCardServiceTest {
   @DisplayName("updateCard – success: updates card fields, evicts cache, returns DTO")
   void updateCard_success() {
     when(paymentCardRepository.findById(cardId)).thenReturn(Optional.of(card));
-    when(paymentCardRepository.save(card)).thenReturn(card);
     when(paymentCardMapper.toResponseDto(card)).thenReturn(responseDto);
     when(redisTemplate.delete("user-info:" + userId)).thenReturn(true);
 
@@ -230,7 +229,7 @@ class PaymentCardServiceTest {
 
     assertThat(result).isNotNull();
     verify(paymentCardMapper).updateCardFromDto(requestDto, card);
-    verify(paymentCardRepository).save(card);
+    verify(paymentCardRepository).flush();
     verify(redisTemplate).delete("user-info:" + userId);
   }
 
