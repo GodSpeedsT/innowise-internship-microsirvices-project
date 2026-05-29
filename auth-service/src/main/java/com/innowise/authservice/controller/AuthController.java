@@ -4,15 +4,12 @@ import com.innowise.authservice.dto.AuthRequest;
 import com.innowise.authservice.dto.AuthResponse;
 import com.innowise.authservice.service.AuthService;
 import com.innowise.authservice.service.impl.TokenService;
-import com.nimbusds.jose.jwk.JWKSet;
 import jakarta.validation.Valid;
 import java.util.Map;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
-import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.oauth2.jwt.Jwt;
-import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
@@ -26,7 +23,6 @@ public class AuthController {
 
   private final AuthService authService;
   private final TokenService tokenService;
-  private final JWKSet jwkSet;
 
   @PostMapping("/register")
   public ResponseEntity<Map<String, Object>> register(
@@ -65,10 +61,4 @@ public class AuthController {
         "role", jwt.getClaim("role")
     ));
   }
-
-  @GetMapping(value = "/jwks", produces = MediaType.APPLICATION_JSON_VALUE)
-  public ResponseEntity<Map<String, Object>> jwks() {
-    return ResponseEntity.ok(jwkSet.toJSONObject());
-  }
-
 }

@@ -2,6 +2,7 @@ package com.innowise.userservice.security;
 
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.HttpEntity;
@@ -41,7 +42,7 @@ public class CustomIntrospector implements OpaqueTokenIntrospector {
 
       log.info("Response from auth-service: {}", response);
       if (response != null && Boolean.TRUE.equals(response.get("valid")) || "true".equals(
-          String.valueOf(response.get("valid")))) {
+          String.valueOf(Objects.requireNonNull(response).get("valid")))) {
         String userId = String.valueOf(response.get("userId"));
         String role = String.valueOf(response.get("role"));
 

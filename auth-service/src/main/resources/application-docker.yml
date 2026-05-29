@@ -18,7 +18,6 @@ jwt:
   refresh-expiration-ms: 604800000
 
 user-service:
-  #url: http://localhost:8081
   url: http://user-service:8081
 
 server:

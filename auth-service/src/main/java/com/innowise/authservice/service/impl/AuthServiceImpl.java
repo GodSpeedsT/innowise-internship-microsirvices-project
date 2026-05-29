@@ -4,6 +4,7 @@ import com.innowise.authservice.dto.AuthRequest;
 import com.innowise.authservice.dto.AuthResponse;
 import com.innowise.authservice.dto.UserDtoForUserService;
 import com.innowise.authservice.entity.AuthUser;
+import com.innowise.authservice.exception.LoginException;
 import com.innowise.authservice.exception.UserException;
 import com.innowise.authservice.repository.AuthRepository;
 import com.innowise.authservice.service.AuthService;
@@ -12,7 +13,6 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.MediaType;
-import org.springframework.security.core.Authentication;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -95,9 +95,9 @@ public class AuthServiceImpl implements AuthService {
   @Transactional(readOnly = true)
   public AuthResponse login(String login, String password) {
     AuthUser authUser = authRepository.findByLogin(login)
-        .orElseThrow(() -> new UserException("Invalid login or password"));
+        .orElseThrow(() -> new LoginException("Invalid login or password"));
     if (!passwordEncoder.matches(password, authUser.getPassword())) {
-      throw new UserException("Invalid login or password");
+      throw new UserException("Invalid password");
     }
 
     String accessToken = tokenService.generateToken(authUser.getId(), authUser.getRole(), false);
@@ -107,19 +107,6 @@ public class AuthServiceImpl implements AuthService {
         .accessToken(accessToken)
         .refreshToken(refreshToken)
         .build();
-
-  }
-
-  @Override
-  public void logout() {
-
-  }
-
-  public void refreshToken() {
-
-  }
-
-  public void validateToken(Authentication authentication) {
 
   }
 }
