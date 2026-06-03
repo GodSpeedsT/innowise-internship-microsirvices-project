@@ -6,7 +6,7 @@ spring:
   jpa:
     hibernate:
       ddl-auto: validate
-    show-sql: true
+    show-sql: false
     database-platform: org.hibernate.dialect.PostgreSQLDialect
 
   liquibase:
@@ -26,7 +26,11 @@ spring:
           max-idle: 8
           min-idle: 0
           max-wait: -1ms
-
+  security:
+    oauth2:
+      resourceserver:
+        jwt:
+          jwk-set-uri: http://auth-service:8085/api/v1/auth/jwks.json
 server:
   port: 8081
 auth-service:

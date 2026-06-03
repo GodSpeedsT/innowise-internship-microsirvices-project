@@ -1,14 +1,13 @@
-package com.innowise.authservice.config;
+package com.innowise.authservice.security;
 
+import com.innowise.authservice.config.JwtKeyLoader;
 import com.nimbusds.jose.jwk.JWKSet;
 import com.nimbusds.jose.jwk.source.JWKSource;
 import com.nimbusds.jose.proc.SecurityContext;
-import java.security.KeyPair;
-import java.security.KeyPairGenerator;
 import com.nimbusds.jose.jwk.RSAKey;
 import java.security.interfaces.RSAPrivateKey;
 import java.security.interfaces.RSAPublicKey;
-import java.util.UUID;
+import lombok.RequiredArgsConstructor;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.security.oauth2.jwt.JwtDecoder;
@@ -17,25 +16,28 @@ import org.springframework.security.oauth2.jwt.NimbusJwtDecoder;
 import org.springframework.security.oauth2.jwt.NimbusJwtEncoder;
 
 @Configuration
+@RequiredArgsConstructor
 public class JwtConfig {
 
-  private final KeyPair keyPair = generateRsaKey();
+  private final JwtKeyLoader jwtKeyLoader;
 
   @Bean
   public RSAPublicKey publicKey() {
-    return (RSAPublicKey) keyPair.getPublic();
+    return jwtKeyLoader.getPublicKey();
   }
 
   @Bean
   public RSAPrivateKey privateKey() {
-    return (RSAPrivateKey) keyPair.getPrivate();
+    return jwtKeyLoader.getPrivateKey();
   }
 
   @Bean
   public RSAKey rsaKey(RSAPublicKey publicKey, RSAPrivateKey privateKey) {
+
+    String keyId = Integer.toHexString(publicKey.hashCode());
     return new RSAKey.Builder(publicKey)
         .privateKey(privateKey)
-        .keyID(UUID.randomUUID().toString())
+        .keyID(keyId)
         .build();
   }
 
@@ -45,8 +47,7 @@ public class JwtConfig {
   }
 
   @Bean
-  public JWKSource<SecurityContext> jwkSource(RSAKey rsaKey) {
-    JWKSet jwkSet = new JWKSet(rsaKey);
+  public JWKSource<SecurityContext> jwkSource(JWKSet jwkSet) {
     return (jwkSelector, securityContext) -> jwkSelector.select(jwkSet);
   }
 
@@ -59,15 +60,4 @@ public class JwtConfig {
   public JwtDecoder jwtDecoder(RSAPublicKey publicKey) {
     return NimbusJwtDecoder.withPublicKey(publicKey).build();
   }
-
-  private static KeyPair generateRsaKey() {
-    try {
-      KeyPairGenerator keyPairGenerator = KeyPairGenerator.getInstance("RSA");
-      keyPairGenerator.initialize(2048);
-      return keyPairGenerator.generateKeyPair();
-    } catch (Exception e) {
-      throw new IllegalArgumentException("Failed to generate RSA keys", e);
-    }
-  }
-
 }

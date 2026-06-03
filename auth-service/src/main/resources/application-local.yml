@@ -25,3 +25,7 @@ user-service:
 
 server:
   port: 8085
+logging:
+  level:
+    web: debug
+    root: debug

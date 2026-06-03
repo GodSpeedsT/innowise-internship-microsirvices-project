@@ -1,4 +1,4 @@
-package com.innowise.authservice.config;
+package com.innowise.authservice.security;
 
 import com.innowise.authservice.exception.CustomAccessDeniedHandler;
 import com.innowise.authservice.exception.CustomAuthenticationEntryPoint;
@@ -32,10 +32,12 @@ public class SecurityConfig {
         .csrf(AbstractHttpConfigurer::disable)
         .authorizeHttpRequests(authorizeRequests -> authorizeRequests
             .requestMatchers(
-                "/api/v1/auth/register",
+                "/api/v1/auth/registrations",
                 "/api/v1/auth/login",
-                "/api/v1/auth/refresh",
-                "/api/v1/auth/validate"
+                "/api/v1/auth/tokens/refresh",
+                "/api/v1/auth/tokens/validate",
+                "/api/v1/auth/credentials",
+                "/api/v1/auth/jwks.json"
             ).permitAll()
             .anyRequest().authenticated()
         )
@@ -52,8 +54,13 @@ public class SecurityConfig {
   }
 
   @Bean
-  public RestClient restClient() {
-    return RestClient.builder().build();
+  public RestClient.Builder restClientBuilder() {
+    return RestClient.builder();
+  }
+
+  @Bean
+  public RestClient restClient(RestClient.Builder restClientBuilder) {
+    return restClientBuilder.build();
   }
 
 }

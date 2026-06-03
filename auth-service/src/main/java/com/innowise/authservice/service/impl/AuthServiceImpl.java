@@ -2,18 +2,22 @@ package com.innowise.authservice.service.impl;
 
 import com.innowise.authservice.dto.AuthRequest;
 import com.innowise.authservice.dto.AuthResponse;
+import com.innowise.authservice.dto.CredentialsRequest;
+import com.innowise.authservice.dto.LoginRequest;
 import com.innowise.authservice.dto.UserDtoForUserService;
 import com.innowise.authservice.entity.AuthUser;
-import com.innowise.authservice.exception.LoginException;
-import com.innowise.authservice.exception.UserException;
+import com.innowise.authservice.entity.Role;
+import com.innowise.authservice.exception.CredentialsException;
 import com.innowise.authservice.repository.AuthRepository;
 import com.innowise.authservice.service.AuthService;
+import com.innowise.authservice.service.TokenService;
 import java.util.UUID;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.MediaType;
 import org.springframework.security.crypto.password.PasswordEncoder;
+import org.springframework.security.oauth2.jwt.Jwt;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.client.RestClient;
@@ -34,22 +38,15 @@ public class AuthServiceImpl implements AuthService {
   @Override
   @Transactional
   public UUID register(AuthRequest authRequest) {
-    if (authRepository.exitsByLoginOrEmail(authRequest.getLogin(), authRequest.getEmail())) {
-      throw new UserException("User with this login or email already exists");
-    }
+    checkUser(authRequest.getLogin(), authRequest.getEmail());
 
-    AuthUser authUser = AuthUser.builder()
-        .login(authRequest.getLogin())
-        .password(passwordEncoder.encode(authRequest.getPassword()))
-        .email(authRequest.getEmail())
-        .role(authRequest.getRole())
-        .build();
-
+    AuthUser authUser = buildUser(authRequest.getLogin(), authRequest.getPassword(),
+        authRequest.getEmail(), authRequest.getRole());
     AuthUser savedUser = authRepository.save(authUser);
-    UUID id = savedUser.getId();
+    UUID userId = savedUser.getId();
 
     UserDtoForUserService dto = UserDtoForUserService.builder()
-        .id(id)
+        .id(userId)
         .name(authRequest.getName())
         .surname(authRequest.getSurname())
         .email(authRequest.getEmail())
@@ -67,37 +64,27 @@ public class AuthServiceImpl implements AuthService {
       log.error("User-service call failed during registration for login={}; rolling back",
           authRequest.getLogin(), e);
       authRepository.delete(savedUser);
-      throw new UserException(
+      throw new CredentialsException(
           "Registration failed: User Service is unavailable. " + e.getMessage());
     }
-    return id;
+    return userId;
   }
 
-  @Override
   @Transactional
-  public void saveUserCredentials(AuthRequest authRequest) {
-    if (authRepository.exitsByLoginOrEmail(authRequest.getLogin(), authRequest.getEmail())) {
-      throw new UserException("User with this login or email already exists");
-    }
-
-    AuthUser authUser = AuthUser.builder()
-        .login(authRequest.getLogin())
-        .password(passwordEncoder.encode(authRequest.getPassword()))
-        .email(authRequest.getEmail())
-        .role(authRequest.getRole())
-        .build();
-
+  public void saveUserCredentials(CredentialsRequest request) {
+    checkUser(request.getLogin(), request.getEmail());
+    AuthUser authUser = buildUser(request.getLogin(), request.getPassword(),
+        request.getEmail(), request.getRole());
     authRepository.save(authUser);
-    log.info("Credentials saved for login={}", authRequest.getLogin());
+    log.info("Credentials saved for login={}", request.getLogin());
   }
 
-  @Override
   @Transactional(readOnly = true)
-  public AuthResponse login(String login, String password) {
-    AuthUser authUser = authRepository.findByLogin(login)
-        .orElseThrow(() -> new LoginException("Invalid login or password"));
-    if (!passwordEncoder.matches(password, authUser.getPassword())) {
-      throw new UserException("Invalid password");
+  public AuthResponse login(LoginRequest loginRequest) {
+    AuthUser authUser = authRepository.findByLogin(loginRequest.getLogin())
+        .orElseThrow(() -> new CredentialsException("Invalid credentials"));
+    if (!passwordEncoder.matches(loginRequest.getPassword(), authUser.getPassword())) {
+      throw new CredentialsException("Invalid credentials");
     }
 
     String accessToken = tokenService.generateToken(authUser.getId(), authUser.getRole(), false);
@@ -107,6 +94,29 @@ public class AuthServiceImpl implements AuthService {
         .accessToken(accessToken)
         .refreshToken(refreshToken)
         .build();
-
   }
+
+  public AuthResponse refreshToken(String refreshToken) {
+    return tokenService.refreshToken(refreshToken);
+  }
+
+  public Jwt validateToken(String token) {
+    return tokenService.validateToken(token);
+  }
+
+  private void checkUser(String login, String email) {
+    if (authRepository.existsByLoginOrEmail(login, email)) {
+      throw new CredentialsException("Duplicate credentials");
+    }
+  }
+
+  private AuthUser buildUser(String login, String password, String email, Role role) {
+    return AuthUser.builder()
+        .login(login)
+        .password(passwordEncoder.encode(password))
+        .email(email)
+        .role(role)
+        .build();
+  }
+
 }

@@ -17,10 +17,10 @@ import org.springframework.security.web.SecurityFilterChain;
 @RequiredArgsConstructor
 public class SecurityConfig {
 
-  private final CustomIntrospector customIntrospector;
 
   @Bean
-  public SecurityFilterChain securityFilterChain(HttpSecurity http) {
+  public SecurityFilterChain securityFilterChain(HttpSecurity http,
+      JwtAuthenticationConverter jwtAuthenticationConverter) {
     http
         .csrf(AbstractHttpConfigurer::disable)
         .authorizeHttpRequests(auth -> auth
@@ -28,7 +28,7 @@ public class SecurityConfig {
             .anyRequest().authenticated()
         )
         .oauth2ResourceServer(oauth -> oauth
-            .opaqueToken(opaque -> opaque.introspector(customIntrospector))
+            .jwt(jwt->jwt.jwtAuthenticationConverter(jwtAuthenticationConverter))
         )
         .formLogin(AbstractHttpConfigurer::disable)
         .httpBasic(AbstractHttpConfigurer::disable);

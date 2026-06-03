@@ -7,7 +7,7 @@ spring:
   jpa:
     hibernate:
       ddl-auto: validate
-    show-sql: true
+    show-sql: false
     properties:
       hibernate:
         dialect: org.hibernate.dialect.PostgreSQLDialect
@@ -22,3 +22,7 @@ user-service:
 
 server:
   port: 8085
+logging:
+  level:
+    root: info
+    web: info

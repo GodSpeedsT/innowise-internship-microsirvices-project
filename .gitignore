@@ -3,3 +3,5 @@
 *.class
 *.jar
 **/target/
+**/src/main/resources/keys
+/auth-service/src/main/resources/keys

@@ -2,6 +2,7 @@ package com.innowise.authservice.service.impl;
 
 import com.innowise.authservice.dto.AuthResponse;
 import com.innowise.authservice.entity.Role;
+import com.innowise.authservice.service.TokenService;
 import java.time.Instant;
 import java.util.UUID;
 import lombok.RequiredArgsConstructor;
@@ -16,7 +17,7 @@ import org.springframework.stereotype.Service;
 
 @Service
 @RequiredArgsConstructor
-public class TokenService {
+public class TokenServiceImpl implements TokenService {
 
   @Value("${jwt.access-expiration-ms}")
   private long accessExpiration;
