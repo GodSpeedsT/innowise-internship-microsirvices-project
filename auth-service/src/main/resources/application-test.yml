@@ -1,0 +1,25 @@
+spring:
+  datasource:
+    url: jdbc:postgresql://localhost:5432/test_db
+    driver-class-name: org.postgresql.Driver
+    username: test
+    password: test
+  jpa:
+    hibernate:
+      ddl-auto: create-drop
+    show-sql: false
+    properties:
+      hibernate:
+        dialect: org.hibernate.dialect.PostgreSQLDialect
+  liquibase:
+    enabled: false
+
+jwt:
+  access-expiration-ms: 900000
+  refresh-expiration-ms: 604800000
+
+user-service:
+  url: http://localhost:9999
+
+server:
+  port: 0

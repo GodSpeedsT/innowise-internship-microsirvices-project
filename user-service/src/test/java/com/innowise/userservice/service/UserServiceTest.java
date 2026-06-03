@@ -1,8 +1,9 @@
 package com.innowise.userservice.service;
 
 import com.innowise.userservice.dto.PaymentCardResponseDto;
-import com.innowise.userservice.dto.UserRequestDto;
+import com.innowise.userservice.dto.UserCreateDto;
 import com.innowise.userservice.dto.UserResponseDto;
+import com.innowise.userservice.dto.UserUpdateDto;
 import com.innowise.userservice.entity.PaymentCard;
 import com.innowise.userservice.entity.User;
 import com.innowise.userservice.exception.DuplicateEmailException;
@@ -57,8 +58,9 @@ class UserServiceTest {
 
   private UUID userId;
   private User user;
-  private UserRequestDto requestDto;
+  private UserCreateDto requestDto;
   private UserResponseDto responseDto;
+  private UserUpdateDto updateDto;
 
   @BeforeEach
   void setUp() {
@@ -73,14 +75,21 @@ class UserServiceTest {
         .active(true)
         .build();
 
-    requestDto = new UserRequestDto();
+    requestDto = new UserCreateDto();
     requestDto.setName("Kirill");
     requestDto.setSurname("Masterov");
     requestDto.setEmail("masterov_k@bk.ru");
     requestDto.setBirthDate(LocalDate.of(2000, 1, 12));
 
+    updateDto = new UserUpdateDto();
+    updateDto.setName("Kirill");
+    updateDto.setSurname("Masterov");
+    updateDto.setEmail("masterov_k@bk.ru");
+    updateDto.setBirthDate(LocalDate.of(2000, 1, 12));
+
+
     responseDto = new UserResponseDto();
-    responseDto.setUuid(userId);
+    responseDto.setId(userId);
     responseDto.setName("Kirill");
     responseDto.setSurname("Masterov");
     responseDto.setEmail("masterov_k@bk.ru");
@@ -122,7 +131,7 @@ class UserServiceTest {
 
     UserResponseDto result = userService.getUserById(userId);
 
-    assertThat(result.getUuid()).isEqualTo(userId);
+    assertThat(result.getId()).isEqualTo(userId);
     verify(userRepository).findById(userId);
   }
 
@@ -214,16 +223,21 @@ class UserServiceTest {
   @Test
   @DisplayName("updateUser – success: updates fields, evicts cache, returns DTO")
   void updateUser_success() {
+    UserUpdateDto newUpdateDto = new UserUpdateDto();
+    newUpdateDto.setName("Artem");
+    newUpdateDto.setSurname("Kotenko");
+    newUpdateDto.setEmail("artem.ko@mail.ru");
+    newUpdateDto.setBirthDate(LocalDate.of(2000, 1, 1));
+
     when(userRepository.findById(userId)).thenReturn(Optional.of(user));
-    when(userRepository.save(user)).thenReturn(user);
     when(userMapper.toResponseDto(user)).thenReturn(responseDto);
     when(redisTemplate.delete("user-info:" + userId)).thenReturn(true);
 
-    UserResponseDto result = userService.updateUser(userId, requestDto);
+    UserResponseDto result = userService.updateUser(userId, newUpdateDto);
 
     assertThat(result).isNotNull();
-    verify(userMapper).updateUserFromDto(requestDto, user);
-    verify(userRepository).save(user);
+    verify(userMapper).updateUserFromDto(newUpdateDto, user);
+    verify(userRepository).flush();
     verify(redisTemplate).delete("user-info:" + userId);
   }
 
@@ -232,7 +246,7 @@ class UserServiceTest {
   void updateUser_notFound_throwsResourceNotFoundException() {
     when(userRepository.findById(userId)).thenReturn(Optional.empty());
 
-    assertThatThrownBy(() -> userService.updateUser(userId, requestDto))
+    assertThatThrownBy(() -> userService.updateUser(userId, updateDto))
         .isInstanceOf(ResourceNotFoundException.class);
 
     verify(userRepository, never()).save(any());

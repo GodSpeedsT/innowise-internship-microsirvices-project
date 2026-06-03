@@ -31,9 +31,9 @@ services:
     container_name: order_db
     image: postgres:latest
     environment:
-      POSTGRES_USER: ${ORDER_DB_USERNAME}
-      POSTGRES_PASSWORD: ${ORDER_DB_PASSWORD}
-      POSTGRES_DB: ${ORDER_DB_DATABASE}
+      POSTGRES_USER: ${ORDERS_DB_USERNAME}
+      POSTGRES_PASSWORD: ${ORDERS_DB_PASSWORD}
+      POSTGRES_DB: ${ORDERS_DB_DATABASE}
     ports:
       - "5434:5432"
     volumes:
@@ -72,6 +72,23 @@ services:
     depends_on:
       - users_db
       - users_redis
+    networks:
+      - innowise_network
+
+  auth-service:
+    container_name: auth_service
+    build:
+      context: ./auth-service
+      dockerfile: Dockerfile
+    ports:
+      - "8085:8085"
+    environment:
+      SPRING_PROFILES_ACTIVE: docker
+      AUTH_DB_DATABASE: secret
+      AUTH_DB_USERNAME: secret
+      AUTH_DB_PASSWORD: secret
+    depends_on:
+      - auth_db
     networks:
       - innowise_network
 

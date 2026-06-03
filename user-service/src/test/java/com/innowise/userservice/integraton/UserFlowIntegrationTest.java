@@ -10,12 +10,14 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
 import com.innowise.userservice.dto.PaymentCardRequestDto;
-import com.innowise.userservice.dto.UserRequestDto;
+import com.innowise.userservice.dto.UserCreateDto;
 import com.innowise.userservice.dto.UserResponseDto;
+import com.innowise.userservice.dto.UserUpdateDto;
 import com.innowise.userservice.entity.PaymentCard;
 import com.innowise.userservice.entity.User;
 import com.innowise.userservice.dao.PaymentCardRepository;
 import com.innowise.userservice.dao.UserRepository;
+import jakarta.servlet.Filter;
 import java.time.LocalDate;
 import java.util.List;
 import java.util.UUID;
@@ -31,6 +33,7 @@ import org.springframework.boot.test.context.SpringBootTest.WebEnvironment;
 import org.springframework.boot.webmvc.test.autoconfigure.AutoConfigureWebMvc;
 import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.http.MediaType;
+import org.springframework.security.test.context.support.WithMockUser;
 import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.context.DynamicPropertyRegistry;
 import org.springframework.test.context.DynamicPropertySource;
@@ -48,6 +51,7 @@ import tools.jackson.databind.ObjectMapper;
 @AutoConfigureWebMvc
 @Testcontainers
 @ActiveProfiles("test")
+@WithMockUser(roles = "ADMIN")
 class UserFlowIntegrationTest {
 
   @Container
@@ -61,6 +65,8 @@ class UserFlowIntegrationTest {
   @SuppressWarnings("resource")
   static GenericContainer<?> redis = new GenericContainer<>("redis:latest")
       .withExposedPorts(6379);
+  @Autowired
+  private Filter springSecurityFilterChain;
 
   @DynamicPropertySource
   static void configureProperties(DynamicPropertyRegistry registry) {
@@ -109,22 +115,17 @@ class UserFlowIntegrationTest {
 
   @Test
   void shouldCreateUserAddCardAndUseRedisCache() throws Exception {
-    UserRequestDto userDto = new UserRequestDto();
-    userDto.setName("Kirill");
-    userDto.setSurname("Masterov");
-    userDto.setEmail("kirill@example.com");
-    userDto.setBirthDate(LocalDate.of(2006, 12, 1));
-
+    UUID uuid = UUID.randomUUID();
+    UserCreateDto userCreateDto = createUserRequest(uuid, "Kirill", "Masterov",
+        "kirill@example.com");
     MvcResult userResult = mockMvc.perform(post("/api/v1/users")
             .contentType(MediaType.APPLICATION_JSON)
-            .content(objectMapper.writeValueAsString(userDto)))
+            .content(objectMapper.writeValueAsString(userCreateDto)))
         .andExpect(status().isCreated())
-        .andExpect(jsonPath("$.uuid").exists())
+        .andExpect(jsonPath("$.id").exists())
         .andReturn();
 
-    String responseBody = userResult.getResponse().getContentAsString();
-    String userIdStr = objectMapper.readTree(responseBody).get("uuid").asString();
-    UUID userId = UUID.fromString(userIdStr);
+    UUID userId = extractUserId(userResult);
 
     List<User> userInDb = userRepository.findAll();
     assertThat(userInDb).hasSize(1);
@@ -171,11 +172,8 @@ class UserFlowIntegrationTest {
     @Test
     @DisplayName("Create user with duplicate email")
     void createUserWithDuplicateEmail() throws Exception {
-      UserRequestDto userDto = new UserRequestDto();
-      userDto.setName("Kirill");
-      userDto.setSurname("Masterov");
-      userDto.setEmail("kirill@example.com");
-      userDto.setBirthDate(LocalDate.of(2006, 12, 1));
+      UUID uuid = UUID.randomUUID();
+      UserCreateDto userDto = createUserRequest(uuid, "Kirill", "Masterov", "kirill@example.com");
 
       mockMvc.perform(post("/api/v1/users")
               .contentType(MediaType.APPLICATION_JSON)
@@ -200,16 +198,18 @@ class UserFlowIntegrationTest {
     @Test
     @DisplayName("UpdateUser")
     void shouldUpdateUser() throws Exception {
-      UserRequestDto createDto = createUserRequest("Kirill", "Masterov", "kirill@example.com");
+      UUID uuid = UUID.randomUUID();
+      UserCreateDto userDto = createUserRequest(uuid, "Kirill", "Masterov", "kirill@example.com");
+
       MvcResult createResult = mockMvc.perform(post("/api/v1/users")
               .contentType(MediaType.APPLICATION_JSON)
-              .content(objectMapper.writeValueAsString(createDto)))
+              .content(objectMapper.writeValueAsString(userDto)))
           .andExpect(status().isCreated())
           .andReturn();
 
       UUID userId = extractUserId(createResult);
 
-      UserRequestDto updateDto = createUserRequest("Artem", "Kotenko", "artem@example.com");
+      UserUpdateDto updateDto = updateUserRequest("Artem", "Kotenko", "artem@example.com");
       mockMvc.perform(put("/api/v1/users/{id}", userId)
               .contentType(MediaType.APPLICATION_JSON)
               .content(objectMapper.writeValueAsString(updateDto)))
@@ -225,7 +225,8 @@ class UserFlowIntegrationTest {
     @Test
     @DisplayName("Activate/deactivate user")
     void shouldActivateAndDeactivateUser() throws Exception {
-      UserRequestDto userDto = createUserRequest("Test", "User", "test@example.com");
+      UUID uuid = UUID.randomUUID();
+      UserCreateDto userDto = createUserRequest(uuid, "Kirill", "Masterov", "kirill@example.com");
       MvcResult createResult = mockMvc.perform(post("/api/v1/users")
               .contentType(MediaType.APPLICATION_JSON)
               .content(objectMapper.writeValueAsString(userDto)))
@@ -241,7 +242,7 @@ class UserFlowIntegrationTest {
       mockMvc.perform(get("/api/v1/users")
               .param("active", "false"))
           .andExpect(status().isOk())
-          .andExpect(jsonPath("$.content[0].uuid").value(userId.toString()));
+          .andExpect(jsonPath("$.content[0].id").value(userId.toString()));
 
       mockMvc.perform(patch("/api/v1/users/{id}", userId)
               .param("activate", "true"))
@@ -250,7 +251,7 @@ class UserFlowIntegrationTest {
       mockMvc.perform(get("/api/v1/users")
               .param("active", "true"))
           .andExpect(status().isOk())
-          .andExpect(jsonPath("$.content[0].uuid").value(userId.toString()));
+          .andExpect(jsonPath("$.content[0].id").value(userId.toString()));
     }
   }
 
@@ -260,7 +261,8 @@ class UserFlowIntegrationTest {
 
     @BeforeEach
     void createTestUser() throws Exception {
-      UserRequestDto userDto = createUserRequest("Card", "Test", "cardtest@example.com");
+      UUID uuid = UUID.randomUUID();
+      UserCreateDto userDto = createUserRequest(uuid, "Card", "Test", "cardtest@example.com");
       MvcResult result = mockMvc.perform(post("/api/v1/users")
               .contentType(MediaType.APPLICATION_JSON)
               .content(objectMapper.writeValueAsString(userDto)))
@@ -369,7 +371,9 @@ class UserFlowIntegrationTest {
     @BeforeEach
     void createMultipleUsers() throws Exception {
       for (int i = 1; i <= 15; i++) {
-        UserRequestDto userDto = createUserRequest(
+        UUID uuid = UUID.randomUUID();
+        UserCreateDto userDto = createUserRequest(
+            uuid,
             "User" + i,
             i % 2 == 0 ? "Even" : "Odd",
             "user" + i + "@example.com"
@@ -404,7 +408,9 @@ class UserFlowIntegrationTest {
     @Test
     @DisplayName("Filter by name")
     void shouldFilterUsersByName() throws Exception {
-      UserRequestDto uniqueUser = createUserRequest("UniqueUser99", "Test", "unique@example.com");
+      UUID uuid = UUID.randomUUID();
+      UserCreateDto uniqueUser = createUserRequest(uuid, "UniqueUser99", "Test",
+          "unique@example.com");
       mockMvc.perform(post("/api/v1/users")
               .contentType(MediaType.APPLICATION_JSON)
               .content(objectMapper.writeValueAsString(uniqueUser)))
@@ -433,7 +439,8 @@ class UserFlowIntegrationTest {
     @Test
     @DisplayName("Create user with incorrect data")
     void shouldFailCreateUserWithInvalidData() throws Exception {
-      UserRequestDto invalidUser = new UserRequestDto();
+      UserCreateDto invalidUser = new UserCreateDto();
+      invalidUser.setId(UUID.randomUUID());
       invalidUser.setName("");
       invalidUser.setSurname("Valid");
       invalidUser.setEmail("valid@example.com");
@@ -456,7 +463,8 @@ class UserFlowIntegrationTest {
     @Test
     @DisplayName("Create card with incorrect data")
     void shouldFailCreateCardWithInvalidData() throws Exception {
-      UserRequestDto userDto = createUserRequest("Valid", "User", "valid@example.com");
+      UUID uuid = UUID.randomUUID();
+      UserCreateDto userDto = createUserRequest(uuid, "Valid", "User", "valid@example.com");
       MvcResult userResult = mockMvc.perform(post("/api/v1/users")
               .contentType(MediaType.APPLICATION_JSON)
               .content(objectMapper.writeValueAsString(userDto)))
@@ -477,8 +485,18 @@ class UserFlowIntegrationTest {
     }
   }
 
-  private UserRequestDto createUserRequest(String name, String surname, String email) {
-    UserRequestDto dto = new UserRequestDto();
+  private UserCreateDto createUserRequest(UUID userId, String name, String surname, String email) {
+    UserCreateDto dto = new UserCreateDto();
+    dto.setId(userId);
+    dto.setName(name);
+    dto.setSurname(surname);
+    dto.setEmail(email);
+    dto.setBirthDate(LocalDate.of(2000, 1, 1));
+    return dto;
+  }
+
+  private UserUpdateDto updateUserRequest(String name, String surname, String email) {
+    UserUpdateDto dto = new UserUpdateDto();
     dto.setName(name);
     dto.setSurname(surname);
     dto.setEmail(email);
@@ -497,7 +515,7 @@ class UserFlowIntegrationTest {
 
   private UUID extractUserId(MvcResult result) throws Exception {
     String responseBody = result.getResponse().getContentAsString();
-    String userIdStr = objectMapper.readTree(responseBody).get("uuid").asString();
+    String userIdStr = objectMapper.readTree(responseBody).get("id").asString();
     return UUID.fromString(userIdStr);
   }
 
