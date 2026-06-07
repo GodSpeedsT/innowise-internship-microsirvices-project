@@ -37,9 +37,9 @@ public class Item {
   @Column(name = "price", nullable = false, precision = 10, scale = 2)
   private BigDecimal price;
   @CreatedDate
-  @Column(name = "created_at",nullable = false, updatable = false)
+  @Column(name = "created_at", nullable = false, updatable = false)
   private LocalDateTime createdAt;
   @LastModifiedDate
-  @Column(name = "updated_at",nullable = false)
+  @Column(name = "updated_at", nullable = false)
   private LocalDateTime updatedAt;
 }
