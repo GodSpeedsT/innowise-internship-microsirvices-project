@@ -3,7 +3,6 @@ package com.innowise.orderservice.service.impl;
 import com.innowise.orderservice.dao.repository.ItemRepository;
 import com.innowise.orderservice.dao.specifications.ItemSpecification;
 import com.innowise.orderservice.dto.request.ItemCreateRequest;
-import com.innowise.orderservice.dto.request.UpdateItemRequest;
 import com.innowise.orderservice.dto.response.ItemResponse;
 import com.innowise.orderservice.entity.Item;
 import com.innowise.orderservice.exception.DuplicateEntityException;
@@ -47,7 +46,7 @@ public class ItemServiceImpl implements ItemService {
   }
 
   @Transactional
-  public ItemResponse updateItem(UUID itemId, UpdateItemRequest updateItemRequest) {
+  public ItemResponse updateItem(UUID itemId, ItemCreateRequest updateItemRequest) {
     Item item = findItemByIdOrThrow(itemId);
     itemMapper.updateItemFromDto(updateItemRequest, item);
     itemRepository.flush();

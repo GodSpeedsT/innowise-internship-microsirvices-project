@@ -1,5 +1,6 @@
 package com.innowise.orderservice.service.impl;
 
+import com.innowise.orderservice.config.UserClient;
 import com.innowise.orderservice.dao.repository.ItemRepository;
 import com.innowise.orderservice.dao.repository.OrderRepository;
 import com.innowise.orderservice.dao.specifications.OrderSpecifications;
@@ -42,6 +43,7 @@ public class OrderServiceImpl implements OrderService {
   private final OrderMapper orderMapper;
   private final ItemRepository itemRepository;
   private final RestClient restClient;
+  private final UserClient userClient;
 
   @Transactional
   public OrderResponse createOrder(OrderCreateRequest request) {
@@ -52,7 +54,7 @@ public class OrderServiceImpl implements OrderService {
     order.setTotalPrice(calculateTotalPrice(items));
     Order savedOrder = orderRepository.save(order);
     OrderResponse response = orderMapper.toResponse(savedOrder);
-    response.setUser(getUserInfo(request.getUserId()));
+    response.setUser(userClient.getUserInfo(request.getUserId()));
     return response;
   }
 
@@ -88,24 +90,6 @@ public class OrderServiceImpl implements OrderService {
   public void deleteOrderById(UUID orderId) {
     findOrderOrThrow(orderId);
     orderRepository.deleteById(orderId);
-  }
-
-  @CircuitBreaker(name = "userService", fallbackMethod = "getUserInfoFallback")
-  public UserResponse getUserInfo(UUID userId) {
-    try {
-      return restClient.get()
-          .uri(userServiceUrl + userId)
-          .retrieve()
-          .body(UserResponse.class);
-    } catch (Exception e) {
-      throw new ExternalServiceException("Error getting user: ", e);
-    }
-  }
-
-  public String getUserInfoFallback(UUID userId, Throwable throwable) {
-    log.warn("Circuit breaker triggered for user-service, userId = {} : {}", userId,
-        throwable.getMessage());
-    return null;
   }
 
   private List<OrderItem> createOrderItems(OrderCreateRequest request, Order order) {

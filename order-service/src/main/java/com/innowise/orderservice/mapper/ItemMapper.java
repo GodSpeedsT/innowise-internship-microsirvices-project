@@ -1,7 +1,6 @@
 package com.innowise.orderservice.mapper;
 
 import com.innowise.orderservice.dto.request.ItemCreateRequest;
-import com.innowise.orderservice.dto.request.UpdateItemRequest;
 import com.innowise.orderservice.dto.response.ItemResponse;
 import com.innowise.orderservice.entity.Item;
 import org.mapstruct.Mapper;
@@ -19,6 +18,6 @@ public interface ItemMapper {
   @Mapping(source = "id", target = "itemId")
   ItemResponse toResponse(Item item);
 
-  void updateItemFromDto(UpdateItemRequest request, @MappingTarget Item item);
+  void updateItemFromDto(ItemCreateRequest request, @MappingTarget Item item);
 
 }

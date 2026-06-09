@@ -1,7 +1,6 @@
 package com.innowise.orderservice.service;
 
 import com.innowise.orderservice.dto.request.ItemCreateRequest;
-import com.innowise.orderservice.dto.request.UpdateItemRequest;
 import com.innowise.orderservice.dto.response.ItemResponse;
 import java.math.BigDecimal;
 import java.util.UUID;
@@ -47,7 +46,7 @@ public interface ItemService {
    * @return updated item response
    * @throws com.innowise.orderservice.exception.EntityNotFoundException if item is not found
    */
-  ItemResponse updateItem(UUID itemId, UpdateItemRequest request);
+  ItemResponse updateItem(UUID itemId, ItemCreateRequest request);
 
   /**
    * Deletes an item by its ID.

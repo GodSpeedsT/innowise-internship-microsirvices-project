@@ -30,7 +30,7 @@ public class OrderSpecifications {
         return cb.conjunction();
       }
       try {
-        OrderStatus orderStatus = OrderStatus.valueOf(status.toLowerCase());
+        OrderStatus orderStatus = OrderStatus.valueOf(status.toUpperCase());
         return cb.equal(root.get("status"), orderStatus);
       } catch (IllegalArgumentException e) {
         return cb.disjunction();

@@ -1,7 +1,6 @@
 package com.innowise.orderservice.controller;
 
 import com.innowise.orderservice.dto.request.ItemCreateRequest;
-import com.innowise.orderservice.dto.request.UpdateItemRequest;
 import com.innowise.orderservice.dto.response.ItemResponse;
 import com.innowise.orderservice.service.ItemService;
 import jakarta.validation.Valid;
@@ -58,7 +57,7 @@ public class ItemController {
   @PreAuthorize("hasRole('ADMIN')")
   @PutMapping("/{id}")
   public ResponseEntity<ItemResponse> updateItem(@PathVariable UUID id,
-      @Valid @RequestBody UpdateItemRequest updateItemRequest) {
+      @Valid @RequestBody ItemCreateRequest updateItemRequest) {
     return ResponseEntity.ok(itemService.updateItem(id, updateItemRequest));
   }
 
