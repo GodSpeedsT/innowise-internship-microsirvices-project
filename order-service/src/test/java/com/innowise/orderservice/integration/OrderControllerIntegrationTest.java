@@ -30,7 +30,6 @@ class OrderControllerIntegrationTest extends BaseIntegrationTest {
 
   @Autowired
   private ItemRepository itemRepository;
-
   @Autowired
   private OrderRepository orderRepository;
   @Autowired

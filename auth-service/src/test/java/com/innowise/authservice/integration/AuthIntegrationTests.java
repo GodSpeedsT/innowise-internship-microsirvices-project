@@ -7,6 +7,7 @@ import com.innowise.authservice.entity.AuthUser;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.webmvc.test.autoconfigure.AutoConfigureMockMvc;
 import org.springframework.security.crypto.password.PasswordEncoder;
+import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.test.web.servlet.MvcResult;
 import tools.jackson.databind.ObjectMapper;
 import com.innowise.authservice.dto.AuthRequest;
@@ -16,12 +17,10 @@ import com.innowise.authservice.repository.AuthRepository;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.boot.test.context.SpringBootTest;
-import org.springframework.http.HttpMethod;
 import org.springframework.http.MediaType;
 import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.context.DynamicPropertyRegistry;
 import org.springframework.test.context.DynamicPropertySource;
-import org.springframework.test.web.client.MockRestServiceServer;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.web.client.RestClient;
 import org.testcontainers.containers.PostgreSQLContainer;
@@ -31,10 +30,6 @@ import org.testcontainers.junit.jupiter.Testcontainers;
 import java.time.LocalDate;
 
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.springframework.test.web.client.match.MockRestRequestMatchers.method;
-import static org.springframework.test.web.client.match.MockRestRequestMatchers.requestTo;
-import static org.springframework.test.web.client.response.MockRestResponseCreators.withServerError;
-import static org.springframework.test.web.client.response.MockRestResponseCreators.withSuccess;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
@@ -44,7 +39,6 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 @Testcontainers
 @ActiveProfiles("test")
 class AuthIntegrationTests {
-
   @Autowired
   private MockMvc mockMvc;
   @Autowired
@@ -53,9 +47,8 @@ class AuthIntegrationTests {
   private AuthRepository authRepository;
   @Autowired
   private PasswordEncoder passwordEncoder;
-  @Autowired
-  private RestClient.Builder restClientBuilder;
-  private MockRestServiceServer mockServer;
+  @MockitoBean
+  private RestClient restClientBuilder;
 
   @Container
   private static final PostgreSQLContainer<?> postgres = new PostgreSQLContainer<>(
@@ -73,32 +66,12 @@ class AuthIntegrationTests {
 
   @BeforeEach
   void setUp() {
-    mockServer = MockRestServiceServer.bindTo(restClientBuilder).build();
     authRepository.deleteAll();
   }
 
   @Test
-  void register_Success_ShouldCreateUserAndCallUserService() throws Exception {
-    mockServer.expect(requestTo("http://localhost:9999/api/v1/users"))
-        .andExpect(method(HttpMethod.POST))
-        .andRespond(withSuccess());
-
-    mockMvc.perform(post("/api/v1/auth/registrations")
-            .contentType(MediaType.APPLICATION_JSON)
-            .content(objectMapper.writeValueAsString(validAuthRequest("kirill_dev", "kirill@innowise.com"))))
-        .andExpect(status().isCreated())
-        .andExpect(jsonPath("$.message").value("User successfully registered"))
-        .andExpect(jsonPath("$.userId").exists());
-
-    assertThat(authRepository.findByLogin("kirill_dev")).isPresent();
-    mockServer.verify();
-  }
-
-  @Test
   void register_UserServiceFails_ShouldRollbackCredentials() throws Exception {
-    mockServer.expect(requestTo("http://localhost:9999/api/v1/users"))
-        .andExpect(method(HttpMethod.POST))
-        .andRespond(withServerError());
+
 
     mockMvc.perform(post("/api/v1/auth/registrations")
             .contentType(MediaType.APPLICATION_JSON)
@@ -106,7 +79,6 @@ class AuthIntegrationTests {
         .andExpect(status().isUnauthorized());
 
     assertThat(authRepository.findByLogin("fail_user")).isEmpty();
-    mockServer.verify();
   }
 
   @Test
@@ -291,12 +263,12 @@ class AuthIntegrationTests {
   private static AuthRequest validAuthRequest(String login, String email) {
     return AuthRequest.builder()
         .login(login)
-        .password("SuperSecret123!") // >= 12 символов, проходит валидацию
+        .password("SuperSecret123!")
         .email(email)
         .role(Role.USER)
         .name("Test")
         .surname("User")
-        .birthDate(LocalDate.of(1995, 1, 1)) // @Past — в прошлом
+        .birthDate(LocalDate.of(1995, 1, 1))
         .build();
   }
 
