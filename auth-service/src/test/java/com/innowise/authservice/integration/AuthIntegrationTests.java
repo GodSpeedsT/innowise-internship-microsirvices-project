@@ -3,8 +3,10 @@ package com.innowise.authservice.integration;
 import com.innowise.authservice.dto.AuthResponse;
 import com.innowise.authservice.dto.CredentialsRequest;
 import com.innowise.authservice.dto.TokenRequest;
+import com.innowise.authservice.entity.AuthUser;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.webmvc.test.autoconfigure.AutoConfigureMockMvc;
+import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.test.web.servlet.MvcResult;
 import tools.jackson.databind.ObjectMapper;
 import com.innowise.authservice.dto.AuthRequest;
@@ -49,6 +51,8 @@ class AuthIntegrationTests {
   private ObjectMapper objectMapper;
   @Autowired
   private AuthRepository authRepository;
+  @Autowired
+  private PasswordEncoder passwordEncoder;
   @Autowired
   private RestClient.Builder restClientBuilder;
   private MockRestServiceServer mockServer;
@@ -107,14 +111,12 @@ class AuthIntegrationTests {
 
   @Test
   void register_DuplicateLogin_Returns401() throws Exception {
-    mockServer.expect(requestTo("http://localhost:9999/api/v1/users"))
-        .andExpect(method(HttpMethod.POST))
-        .andRespond(withSuccess());
-
-    mockMvc.perform(post("/api/v1/auth/registrations")
-            .contentType(MediaType.APPLICATION_JSON)
-            .content(objectMapper.writeValueAsString(validAuthRequest("dup_user", "dup@test.com"))))
-        .andExpect(status().isCreated());
+    authRepository.save(AuthUser.builder()
+        .login("dup_user")
+        .email("dup@test.com")
+        .password(passwordEncoder.encode("SuperSecret123!"))
+        .role(Role.USER)
+        .build());
 
     mockMvc.perform(post("/api/v1/auth/registrations")
             .contentType(MediaType.APPLICATION_JSON)

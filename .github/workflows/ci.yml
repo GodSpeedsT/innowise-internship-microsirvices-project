@@ -25,15 +25,37 @@ jobs:
           distribution: 'temurin'
           cache: 'maven'
 
-      - name: Compile
+      - name: Compile user-service
         run: mvn clean compile -DskipTests
         working-directory: ./user-service
 
-      - name: Upload compiled classes
+      - name: Compile auth-service
+        run: mvn clean compile -DskipTests
+        working-directory: ./auth-service
+
+      - name: Compile order-service
+        run: mvn clean compile -DskipTests
+        working-directory: ./order-service
+
+      - name: Upload compiled user-service classes
         uses: actions/upload-artifact@v4
         with:
-          name: build-target
+          name: user-service-target
           path: user-service/target/
+          retention-days: 1
+
+      - name: Upload compiled auth-service classes
+        uses: actions/upload-artifact@v4
+        with:
+          name: auth-service-target
+          path: auth-service/target/
+          retention-days: 1
+
+      - name: Upload compiled order-service classes
+        uses: actions/upload-artifact@v4
+        with:
+          name: order-service-target
+          path: order-service/target/
           retention-days: 1
 
   test:
@@ -54,21 +76,55 @@ jobs:
           distribution: 'temurin'
           cache: 'maven'
 
-      - name: Download compiled classes
+      - name: Download compiled user-service classes
         uses: actions/download-artifact@v4
         with:
-          name: build-target
+          name: user-service-target
           path: user-service/target/
 
-      - name: Run tests & generate JaCoCo report
-        run: mvn clean verify
+      - name: Download compiled auth-service classes
+        uses: actions/download-artifact@v4
+        with:
+          name: auth-service-target
+          path: auth-service/target/
+
+      - name: Download compiled order-service classes
+        uses: actions/download-artifact@v4
+        with:
+          name: order-service-target
+          path: order-service/target/
+
+      - name: Run tests & generate JaCoCo report for user-service
+        run: mvn verify
         working-directory: ./user-service
 
-      - name: Upload test + coverage results
+      - name: Run tests & generate JaCoCo report for auth-service
+        run: mvn verify
+        working-directory: ./auth-service
+
+      - name: Run tests & generate JaCoCo report for order-service
+        run: mvn verify
+        working-directory: ./order-service
+
+      - name: Upload user-service test results
         uses: actions/upload-artifact@v4
         with:
-          name: test-target
+          name: user-service-test-target
           path: user-service/target/
+          retention-days: 1
+
+      - name: Upload auth-service test results
+        uses: actions/upload-artifact@v4
+        with:
+          name: auth-service-test-target
+          path: auth-service/target/
+          retention-days: 1
+
+      - name: Upload order-service test results
+        uses: actions/upload-artifact@v4
+        with:
+          name: order-service-test-target
+          path: order-service/target/
           retention-days: 1
 
   code-analysis:
@@ -96,13 +152,25 @@ jobs:
           key: ${{ runner.os }}-sonar
           restore-keys: ${{ runner.os }}-sonar
 
-      - name: Download test + coverage results
+      - name: Download user-service test results
         uses: actions/download-artifact@v4
         with:
-          name: test-target
+          name: user-service-test-target
           path: user-service/target/
 
-      - name: Analyze with SonarCloud
+      - name: Download auth-service test results
+        uses: actions/download-artifact@v4
+        with:
+          name: auth-service-test-target
+          path: auth-service/target/
+
+      - name: Download order-service test results
+        uses: actions/download-artifact@v4
+        with:
+          name: order-service-test-target
+          path: order-service/target/
+
+      - name: Analyze user-service with SonarCloud
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
@@ -114,6 +182,32 @@ jobs:
             -Dsonar.coverage.jacoco.xmlReportPaths=target/site/jacoco/jacoco.xml \
             -DskipTests
         working-directory: ./user-service
+
+      - name: Analyze auth-service with SonarCloud
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
+        run: |
+          mvn sonar:sonar \
+            -Dsonar.projectKey=${{ secrets.SONAR_PROJECT_KEY }} \
+            -Dsonar.organization=${{ secrets.SONAR_ORGANIZATION }} \
+            -Dsonar.host.url=https://sonarcloud.io \
+            -Dsonar.coverage.jacoco.xmlReportPaths=target/site/jacoco/jacoco.xml \
+            -DskipTests
+        working-directory: ./auth-service
+
+      - name: Analyze order-service with SonarCloud
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
+        run: |
+          mvn sonar:sonar \
+            -Dsonar.projectKey=${{ secrets.SONAR_PROJECT_KEY }} \
+            -Dsonar.organization=${{ secrets.SONAR_ORGANIZATION }} \
+            -Dsonar.host.url=https://sonarcloud.io \
+            -Dsonar.coverage.jacoco.xmlReportPaths=target/site/jacoco/jacoco.xml \
+            -DskipTests
+        working-directory: ./order-service
 
   artifact:
     name: Artifact Creation
@@ -133,7 +227,7 @@ jobs:
           username: ${{ secrets.DOCKERHUB_USERNAME }}
           password: ${{ secrets.DOCKERHUB_TOKEN }}
 
-      - name: Build and Push Docker Image
+      - name: Build and push user-service
         uses: docker/build-push-action@v5
         with:
           context: ./user-service
@@ -142,5 +236,29 @@ jobs:
           tags: |
             ${{ secrets.DOCKERHUB_USERNAME }}/user-service:latest
             ${{ secrets.DOCKERHUB_USERNAME }}/user-service:${{ github.sha }}
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+
+      - name: Build and push auth-service
+        uses: docker/build-push-action@v5
+        with:
+          context: ./auth-service
+          file: ./auth-service/Dockerfile
+          push: true
+          tags: |
+            ${{ secrets.DOCKERHUB_USERNAME }}/auth-service:latest
+            ${{ secrets.DOCKERHUB_USERNAME }}/auth-service:${{ github.sha }}
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+
+      - name: Build and push order-service
+        uses: docker/build-push-action@v5
+        with:
+          context: ./order-service
+          file: ./order-service/Dockerfile
+          push: true
+          tags: |
+            ${{ secrets.DOCKERHUB_USERNAME }}/order-service:latest
+            ${{ secrets.DOCKERHUB_USERNAME }}/order-service:${{ github.sha }}
           cache-from: type=gha
           cache-to: type=gha,mode=max
