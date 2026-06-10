@@ -39,6 +39,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 @Testcontainers
 @ActiveProfiles("test")
 class AuthIntegrationTests {
+
   @Autowired
   private MockMvc mockMvc;
   @Autowired
@@ -71,7 +72,6 @@ class AuthIntegrationTests {
 
   @Test
   void register_UserServiceFails_ShouldRollbackCredentials() throws Exception {
-
 
     mockMvc.perform(post("/api/v1/auth/registrations")
             .contentType(MediaType.APPLICATION_JSON)
@@ -110,12 +110,14 @@ class AuthIntegrationTests {
   void saveCredentials_DuplicateEmail_Returns401() throws Exception {
     mockMvc.perform(post("/api/v1/auth/credentials")
             .contentType(MediaType.APPLICATION_JSON)
-            .content(objectMapper.writeValueAsString(validCredentials("first_user", "shared@test.com"))))
+            .content(
+                objectMapper.writeValueAsString(validCredentials("first_user", "shared@test.com"))))
         .andExpect(status().isCreated());
 
     mockMvc.perform(post("/api/v1/auth/credentials")
             .contentType(MediaType.APPLICATION_JSON)
-            .content(objectMapper.writeValueAsString(validCredentials("second_user", "shared@test.com"))))
+            .content(
+                objectMapper.writeValueAsString(validCredentials("second_user", "shared@test.com"))))
         .andExpect(status().isUnauthorized());
   }
 
@@ -128,7 +130,8 @@ class AuthIntegrationTests {
 
     mockMvc.perform(post("/api/v1/auth/login")
             .contentType(MediaType.APPLICATION_JSON)
-            .content(objectMapper.writeValueAsString(new LoginRequest("login_test", "SuperSecret123!"))))
+            .content(
+                objectMapper.writeValueAsString(new LoginRequest("login_test", "SuperSecret123!"))))
         .andExpect(status().isOk())
         .andExpect(jsonPath("$.accessToken").isNotEmpty())
         .andExpect(jsonPath("$.refreshToken").isNotEmpty());
@@ -140,7 +143,8 @@ class AuthIntegrationTests {
 
     mockMvc.perform(post("/api/v1/auth/login")
             .contentType(MediaType.APPLICATION_JSON)
-            .content(objectMapper.writeValueAsString(new LoginRequest("wrongpw_user", "WrongPassword999!"))))
+            .content(
+                objectMapper.writeValueAsString(new LoginRequest("wrongpw_user", "WrongPassword999!"))))
         .andExpect(status().isUnauthorized())
         .andExpect(jsonPath("$.message").value("Invalid credentials"));
   }
@@ -172,7 +176,8 @@ class AuthIntegrationTests {
   void validate_AdminRole_ClaimPresentInToken() throws Exception {
     mockMvc.perform(post("/api/v1/auth/credentials")
             .contentType(MediaType.APPLICATION_JSON)
-            .content(objectMapper.writeValueAsString(validCredentials("admin_user", "admin@test.com", Role.ADMIN))))
+            .content(objectMapper.writeValueAsString(
+                validCredentials("admin_user", "admin@test.com", Role.ADMIN))))
         .andExpect(status().isCreated());
 
     String accessToken = loginAndGetTokens("admin_user").getAccessToken();
