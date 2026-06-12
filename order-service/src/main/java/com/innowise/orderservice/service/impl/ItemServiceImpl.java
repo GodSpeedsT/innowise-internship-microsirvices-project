@@ -53,6 +53,7 @@ public class ItemServiceImpl implements ItemService {
     return itemMapper.toResponse(item);
   }
 
+  @Transactional
   public void deleteItem(UUID itemId) {
     findItemByIdOrThrow(itemId);
     itemRepository.deleteById(itemId);

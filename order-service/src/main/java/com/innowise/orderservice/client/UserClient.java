@@ -1,6 +1,7 @@
-package com.innowise.orderservice.config;
+package com.innowise.orderservice.client;
 
 import com.innowise.orderservice.dto.response.UserResponse;
+import com.innowise.orderservice.exception.ExternalServiceException;
 import io.github.resilience4j.circuitbreaker.annotation.CircuitBreaker;
 import java.util.UUID;
 import lombok.RequiredArgsConstructor;
@@ -19,7 +20,7 @@ public class UserClient {
   @Value("${user-service.url}")
   private String userServiceUrl;
 
-  @CircuitBreaker(name = "userService",fallbackMethod = "getUserInfoFallback")
+  @CircuitBreaker(name = "userService", fallbackMethod = "getUserInfoFallback")
   public UserResponse getUserInfo(UUID userId) {
     return restClient.get()
         .uri(userServiceUrl + userId)
@@ -30,7 +31,7 @@ public class UserClient {
   public UserResponse getUserInfoFallback(UUID userId, Throwable throwable) {
     log.warn("Circuit breaker triggered for user-service, userId = {} : {}", userId,
         throwable.getMessage());
-    return null;
+    throw new ExternalServiceException("User-service", throwable);
   }
 
 }

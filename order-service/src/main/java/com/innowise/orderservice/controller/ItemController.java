@@ -63,9 +63,9 @@ public class ItemController {
 
   @PreAuthorize("hasRole('ADMIN')")
   @DeleteMapping("/{id}")
-  public ResponseEntity<ItemResponse> deleteItem(@PathVariable UUID id) {
+  public ResponseEntity<Void> deleteItem(@PathVariable UUID id) {
     itemService.deleteItem(id);
-    return ResponseEntity.status(HttpStatus.NO_CONTENT).build();
+    return ResponseEntity.noContent().build();
   }
 
 }

@@ -179,4 +179,22 @@ class ItemServiceTests {
 
     verify(itemRepository, never()).save(any());
   }
+
+  @Test
+  @DisplayName("deleteItem - success delete item from db")
+  void deleteItem_success() {
+    when(itemRepository.findById(itemId)).thenReturn(Optional.of(item));
+    itemService.deleteItem(itemId);
+    verify(itemRepository).deleteById(itemId);
+  }
+
+  @Test
+  @DisplayName("deleteItem - throws EntityNotFoundException when item does not exists")
+  void deleteItem_notFound_throwsEntityNotFoundException() {
+    when(itemRepository.findById(itemId)).thenReturn(Optional.empty());
+    assertThatThrownBy(() -> itemService.deleteItem(itemId)).isInstanceOf(
+        EntityNotFoundException.class);
+    verify(itemRepository, never()).deleteById(itemId);
+  }
+
 }

@@ -1,6 +1,6 @@
 package com.innowise.orderservice.unit;
 
-import com.innowise.orderservice.config.UserClient;
+import com.innowise.orderservice.client.UserClient;
 import com.innowise.orderservice.dao.repository.ItemRepository;
 import com.innowise.orderservice.dao.repository.OrderRepository;
 import com.innowise.orderservice.dto.request.OrderCreateRequest;
@@ -30,6 +30,7 @@ import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageImpl;
 import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.domain.Specification;
 import org.springframework.web.client.RestClient;
 
@@ -54,14 +55,6 @@ class OrderServiceTest {
   private ItemRepository itemRepository;
   @Mock
   private UserClient userClient;
-  @Mock
-  private RestClient restClient;
-  @Mock
-  private RestClient.RequestHeadersUriSpec requestHeadersUriSpec;
-  @Mock
-  private RestClient.RequestHeadersSpec requestHeadersSpec;
-  @Mock
-  private RestClient.ResponseSpec responseSpec;
 
   @InjectMocks
   private OrderServiceImpl orderService;
@@ -116,7 +109,6 @@ class OrderServiceTest {
         .totalPrice(BigDecimal.valueOf(6000))
         .status(OrderStatus.NEW)
         .build();
-
   }
 
   @Test
@@ -177,10 +169,16 @@ class OrderServiceTest {
   void getOrderById_success() {
     when(orderRepository.findById(orderId)).thenReturn(Optional.of(order));
     when(orderMapper.toResponse(order)).thenReturn(orderResponse);
+    when(userClient.getUserInfo(userId)).thenReturn(userResponse);
+
     OrderResponse result = orderService.getOrderById(orderId);
 
+    assertThat(result.getUser()).isEqualTo(userResponse);
     assertThat(result.getOrderId()).isEqualTo(orderId);
+
     verify(orderRepository).findById(orderId);
+    verify(orderMapper).toResponse(order);
+    verify(userClient).getUserInfo(userId);
   }
 
   @Test
@@ -255,5 +253,42 @@ class OrderServiceTest {
 
     verify(orderRepository, never()).save(any());
   }
+
+  @Test
+  @DisplayName("getOrdersByUserId - success")
+  void getOrdersByUserId_success() {
+    Pageable pageable = PageRequest.of(0, 10);
+    Page<Order> orderPage = new PageImpl<>(List.of(order));
+
+    when(orderRepository.findByUserId(userId, pageable)).thenReturn(orderPage);
+    when(orderMapper.toResponse(order)).thenReturn(orderResponse);
+    when(userClient.getUserInfo(userId)).thenReturn(userResponse);
+
+    Page<OrderResponse> result = orderService.getOrdersByUserId(userId, pageable);
+
+    assertThat(result).isNotNull();
+    assertThat(result.getContent()).hasSize(1);
+
+    OrderResponse actualResponse = result.getContent().getFirst();
+    assertThat(actualResponse.getOrderId()).isEqualTo(orderId);
+    assertThat(actualResponse.getUser()).isEqualTo(userResponse);
+
+    verify(orderRepository).findByUserId(userId, pageable);
+    verify(orderMapper).toResponse(order);
+    verify(userClient).getUserInfo(userId);
+  }
+
+  @Test
+  @DisplayName("deleteOrder - success")
+  void deleteOrder_success() {
+
+    when(orderRepository.findById(orderId)).thenReturn(Optional.of(order));
+
+    orderService.deleteOrderById(orderId);
+
+    verify(orderRepository).findById(orderId);
+    verify(orderRepository).deleteById(orderId);
+  }
+
 }
 

@@ -10,6 +10,7 @@ import java.util.UUID;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
+import org.springframework.data.domain.Sort.Direction;
 import org.springframework.data.web.PageableDefault;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -26,13 +27,13 @@ import org.springframework.web.bind.annotation.RestController;
 
 @RestController
 @RequiredArgsConstructor
-@RequestMapping("/api/v1/orders")
+@RequestMapping("/api/v1")
 public class OrderController {
 
   private final OrderService orderService;
 
   @PreAuthorize("hasRole('ADMIN') OR hasRole('USER')")
-  @PostMapping
+  @PostMapping("/orders")
   public ResponseEntity<OrderResponse> createOrder(
       @Valid @RequestBody OrderCreateRequest orderCreateRequest) {
     return ResponseEntity
@@ -41,38 +42,38 @@ public class OrderController {
   }
 
   @PreAuthorize("hasRole('ADMIN')")
-  @GetMapping
+  @GetMapping("/orders")
   public ResponseEntity<Page<OrderResponse>> getOrders(
       @RequestParam(required = false) LocalDateTime from,
       @RequestParam(required = false) LocalDateTime to,
       @RequestParam(required = false) String status,
-      @PageableDefault(sort = "status") Pageable pageable
+      @PageableDefault(sort = "createdAt", direction = Direction.DESC) Pageable pageable
   ) {
     return ResponseEntity.ok(orderService.getAllOrders(from, to, status, pageable));
   }
 
   @PreAuthorize("hasRole('ADMIN') OR @orderSecurityConfig.isOwner(#id, authentication)")
-  @GetMapping("/{id}")
+  @GetMapping("/orders/{id}")
   public ResponseEntity<OrderResponse> getOrder(@PathVariable UUID id) {
     return ResponseEntity.ok(orderService.getOrderById(id));
   }
 
   @PreAuthorize("hasRole('ADMIN') or #userId.toString() == authentication.name")
-  @GetMapping("/user/{userId}")
+  @GetMapping("/orders/user/{userId}")
   public ResponseEntity<Page<OrderResponse>> getOrdersByUserId(@PathVariable UUID userId,
-      @PageableDefault(sort = "createdAt") Pageable pageable) {
+      @PageableDefault(sort = "createdAt", direction = Direction.DESC) Pageable pageable) {
     return ResponseEntity.ok(orderService.getOrdersByUserId(userId, pageable));
   }
 
   @PreAuthorize("hasRole('ADMIN')")
-  @PutMapping("/{id}")
+  @PutMapping("/orders/{id}")
   public ResponseEntity<OrderResponse> updateOrder(@PathVariable UUID id, @Valid @RequestBody
   UpdateOrderRequest updateOrderRequest) {
     return ResponseEntity.ok(orderService.updateOrder(id, updateOrderRequest));
   }
 
   @PreAuthorize("hasRole('ADMIN')")
-  @DeleteMapping("/{id}")
+  @DeleteMapping("/orders/{id}")
   public ResponseEntity<Void> deleteOrder(@PathVariable UUID id) {
     orderService.deleteOrderById(id);
     return ResponseEntity.noContent().build();

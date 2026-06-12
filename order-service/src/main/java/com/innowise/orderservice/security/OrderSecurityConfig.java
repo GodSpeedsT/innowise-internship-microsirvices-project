@@ -1,4 +1,4 @@
-package com.innowise.orderservice.config;
+package com.innowise.orderservice.security;
 
 import com.innowise.orderservice.dao.repository.OrderRepository;
 import java.util.UUID;

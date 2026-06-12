@@ -38,7 +38,10 @@ resilience4j:
 user-service:
   url: http://user-service:8081/api/v1/users/
 
+
 logging:
   level:
     web: info
     root: info
+server:
+  port: 8082
