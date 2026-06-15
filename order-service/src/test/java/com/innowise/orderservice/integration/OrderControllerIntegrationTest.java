@@ -173,7 +173,7 @@ class OrderControllerIntegrationTest extends BaseIntegrationTest {
 
     stubDefaultUser(userId);
 
-    mockMvc.perform(get("/api/v1/user/" + userId)
+    mockMvc.perform(get("/api/v1/orders/user/" + userId)
             .contentType(MediaType.APPLICATION_JSON))
         .andExpect(status().isOk())
         .andExpect(jsonPath("$.content").isArray())
@@ -186,7 +186,7 @@ class OrderControllerIntegrationTest extends BaseIntegrationTest {
   void getOrdersByUserId_otherUser_forbidden() throws Exception {
     UUID otherUserId = UUID.randomUUID();
 
-    mockMvc.perform(get("/api/v1/user/" + otherUserId)
+    mockMvc.perform(get("/api/v1/orders/user/" + otherUserId)
             .contentType(MediaType.APPLICATION_JSON))
         .andExpect(status().isForbidden());
   }
