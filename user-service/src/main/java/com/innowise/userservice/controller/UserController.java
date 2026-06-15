@@ -16,6 +16,7 @@ import org.springframework.data.web.PageableDefault;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
+import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PatchMapping;
 import org.springframework.web.bind.annotation.PathVariable;
@@ -41,7 +42,7 @@ public class UserController {
         .body(userService.createUser(dto));
   }
 
-  @PreAuthorize("hasRole('ADMIN') or #userId.toString() == authentication.principal.attributes['userId']")
+  @PreAuthorize("hasRole('ADMIN') or #userId.toString() == authentication.name")
   @PostMapping("{userId}/cards")
   public ResponseEntity<PaymentCardResponseDto> createCard(
       @PathVariable UUID userId,
@@ -52,7 +53,7 @@ public class UserController {
         .body(cardService.createCard(userId, paymentCard));
   }
 
-  @PreAuthorize("hasRole('ADMIN') or #id.toString() == authentication.principal.attributes['userId']")
+  @PreAuthorize("hasRole('ADMIN') or #id.toString() == authentication.name")
   @GetMapping("/{id}")
   public ResponseEntity<UserResponseDto> getUserById(@PathVariable UUID id) {
     return ResponseEntity.ok(userService.getUserById(id));
@@ -69,13 +70,13 @@ public class UserController {
     return ResponseEntity.ok(userService.getAllUsers(name, surname, active, pageable));
   }
 
-  @PreAuthorize("hasRole('ADMIN') or #id.toString() == authentication.principal.attributes['userId']")
+  @PreAuthorize("hasRole('ADMIN') or #id.toString() == authentication.name")
   @GetMapping("/{id}/cards")
   public ResponseEntity<UserResponseDto> getUserWithCards(@PathVariable UUID id) {
     return ResponseEntity.ok(userService.getUserWithCards(id));
   }
 
-  @PreAuthorize("hasRole('ADMIN') or #id.toString() == authentication.principal.attributes['userId']")
+  @PreAuthorize("hasRole('ADMIN') or #id.toString() == authentication.name")
   @PutMapping("/{id}")
   public ResponseEntity<UserResponseDto> updateUser(
       @PathVariable UUID id,

@@ -1,0 +1,47 @@
+spring:
+  application:
+    name: order-service
+
+  datasource:
+    url: jdbc:postgresql://order_db:5432/${ORDERS_DB_DATABASE:orders}
+    username: ${ORDERS_DB_USERNAME:orders}
+    password: ${ORDERS_DB_PASSWORD:orders}
+    driver-class-name: org.postgresql.Driver
+  jpa:
+    hibernate:
+      ddl-auto: validate
+    properties:
+      hibernate:
+        dialect: org.hibernate.dialect.PostgreSQLDialect
+
+  liquibase:
+    change-log: classpath:/db/changelog/changelog-root.yaml
+    enabled: true
+
+  security:
+    oauth2:
+      resourceserver:
+        jwt:
+          jwk-set-uri: http://auth-service:8085/api/v1/auth/jwks.json
+
+resilience4j:
+  circuitbreaker:
+    instances:
+      userService:
+        register-health-indicator: true
+        sliding-window-size: 10
+        minimum-number-of-calls: 5
+        failure-rate-threshold: 50
+        wait-duration-in-open-state:
+          seconds: 15
+
+user-service:
+  url: http://user-service:8081/api/v1/users/
+
+
+logging:
+  level:
+    web: info
+    root: info
+server:
+  port: 8082

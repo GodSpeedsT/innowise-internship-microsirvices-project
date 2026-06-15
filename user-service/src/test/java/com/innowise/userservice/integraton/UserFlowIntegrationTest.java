@@ -33,10 +33,12 @@ import org.springframework.boot.test.context.SpringBootTest.WebEnvironment;
 import org.springframework.boot.webmvc.test.autoconfigure.AutoConfigureWebMvc;
 import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.http.MediaType;
+import org.springframework.security.oauth2.jwt.JwtDecoder;
 import org.springframework.security.test.context.support.WithMockUser;
 import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.context.DynamicPropertyRegistry;
 import org.springframework.test.context.DynamicPropertySource;
+import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.MvcResult;
 import org.springframework.test.web.servlet.setup.MockMvcBuilders;
@@ -80,22 +82,18 @@ class UserFlowIntegrationTest {
 
   @Autowired
   private WebApplicationContext context;
-
-  private MockMvc mockMvc;
-
   @Autowired
   private ObjectMapper objectMapper;
-
   @Autowired
   private UserRepository userRepository;
-
   @Autowired
   private PaymentCardRepository cardRepository;
-
   @Autowired
   private RedisTemplate<String, UserResponseDto> redisTemplate;
-
+  @MockitoBean
+  private JwtDecoder jwtDecoder;
   private User savedUser;
+  private MockMvc mockMvc;
 
   @BeforeEach
   void setUpMockMvc() {

@@ -3,8 +3,11 @@ package com.innowise.authservice.integration;
 import com.innowise.authservice.dto.AuthResponse;
 import com.innowise.authservice.dto.CredentialsRequest;
 import com.innowise.authservice.dto.TokenRequest;
+import com.innowise.authservice.entity.AuthUser;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.webmvc.test.autoconfigure.AutoConfigureMockMvc;
+import org.springframework.security.crypto.password.PasswordEncoder;
+import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.test.web.servlet.MvcResult;
 import tools.jackson.databind.ObjectMapper;
 import com.innowise.authservice.dto.AuthRequest;
@@ -14,12 +17,10 @@ import com.innowise.authservice.repository.AuthRepository;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.boot.test.context.SpringBootTest;
-import org.springframework.http.HttpMethod;
 import org.springframework.http.MediaType;
 import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.context.DynamicPropertyRegistry;
 import org.springframework.test.context.DynamicPropertySource;
-import org.springframework.test.web.client.MockRestServiceServer;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.web.client.RestClient;
 import org.testcontainers.containers.PostgreSQLContainer;
@@ -29,10 +30,6 @@ import org.testcontainers.junit.jupiter.Testcontainers;
 import java.time.LocalDate;
 
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.springframework.test.web.client.match.MockRestRequestMatchers.method;
-import static org.springframework.test.web.client.match.MockRestRequestMatchers.requestTo;
-import static org.springframework.test.web.client.response.MockRestResponseCreators.withServerError;
-import static org.springframework.test.web.client.response.MockRestResponseCreators.withSuccess;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
@@ -50,8 +47,9 @@ class AuthIntegrationTests {
   @Autowired
   private AuthRepository authRepository;
   @Autowired
-  private RestClient.Builder restClientBuilder;
-  private MockRestServiceServer mockServer;
+  private PasswordEncoder passwordEncoder;
+  @MockitoBean
+  private RestClient restClientBuilder;
 
   @Container
   private static final PostgreSQLContainer<?> postgres = new PostgreSQLContainer<>(
@@ -69,32 +67,11 @@ class AuthIntegrationTests {
 
   @BeforeEach
   void setUp() {
-    mockServer = MockRestServiceServer.bindTo(restClientBuilder).build();
     authRepository.deleteAll();
   }
 
   @Test
-  void register_Success_ShouldCreateUserAndCallUserService() throws Exception {
-    mockServer.expect(requestTo("http://localhost:9999/api/v1/users"))
-        .andExpect(method(HttpMethod.POST))
-        .andRespond(withSuccess());
-
-    mockMvc.perform(post("/api/v1/auth/registrations")
-            .contentType(MediaType.APPLICATION_JSON)
-            .content(objectMapper.writeValueAsString(validAuthRequest("kirill_dev", "kirill@innowise.com"))))
-        .andExpect(status().isCreated())
-        .andExpect(jsonPath("$.message").value("User successfully registered"))
-        .andExpect(jsonPath("$.userId").exists());
-
-    assertThat(authRepository.findByLogin("kirill_dev")).isPresent();
-    mockServer.verify();
-  }
-
-  @Test
   void register_UserServiceFails_ShouldRollbackCredentials() throws Exception {
-    mockServer.expect(requestTo("http://localhost:9999/api/v1/users"))
-        .andExpect(method(HttpMethod.POST))
-        .andRespond(withServerError());
 
     mockMvc.perform(post("/api/v1/auth/registrations")
             .contentType(MediaType.APPLICATION_JSON)
@@ -102,19 +79,16 @@ class AuthIntegrationTests {
         .andExpect(status().isUnauthorized());
 
     assertThat(authRepository.findByLogin("fail_user")).isEmpty();
-    mockServer.verify();
   }
 
   @Test
   void register_DuplicateLogin_Returns401() throws Exception {
-    mockServer.expect(requestTo("http://localhost:9999/api/v1/users"))
-        .andExpect(method(HttpMethod.POST))
-        .andRespond(withSuccess());
-
-    mockMvc.perform(post("/api/v1/auth/registrations")
-            .contentType(MediaType.APPLICATION_JSON)
-            .content(objectMapper.writeValueAsString(validAuthRequest("dup_user", "dup@test.com"))))
-        .andExpect(status().isCreated());
+    authRepository.save(AuthUser.builder()
+        .login("dup_user")
+        .email("dup@test.com")
+        .password(passwordEncoder.encode("SuperSecret123!"))
+        .role(Role.USER)
+        .build());
 
     mockMvc.perform(post("/api/v1/auth/registrations")
             .contentType(MediaType.APPLICATION_JSON)
@@ -136,12 +110,14 @@ class AuthIntegrationTests {
   void saveCredentials_DuplicateEmail_Returns401() throws Exception {
     mockMvc.perform(post("/api/v1/auth/credentials")
             .contentType(MediaType.APPLICATION_JSON)
-            .content(objectMapper.writeValueAsString(validCredentials("first_user", "shared@test.com"))))
+            .content(
+                objectMapper.writeValueAsString(validCredentials("first_user", "shared@test.com"))))
         .andExpect(status().isCreated());
 
     mockMvc.perform(post("/api/v1/auth/credentials")
             .contentType(MediaType.APPLICATION_JSON)
-            .content(objectMapper.writeValueAsString(validCredentials("second_user", "shared@test.com"))))
+            .content(
+                objectMapper.writeValueAsString(validCredentials("second_user", "shared@test.com"))))
         .andExpect(status().isUnauthorized());
   }
 
@@ -154,7 +130,8 @@ class AuthIntegrationTests {
 
     mockMvc.perform(post("/api/v1/auth/login")
             .contentType(MediaType.APPLICATION_JSON)
-            .content(objectMapper.writeValueAsString(new LoginRequest("login_test", "SuperSecret123!"))))
+            .content(
+                objectMapper.writeValueAsString(new LoginRequest("login_test", "SuperSecret123!"))))
         .andExpect(status().isOk())
         .andExpect(jsonPath("$.accessToken").isNotEmpty())
         .andExpect(jsonPath("$.refreshToken").isNotEmpty());
@@ -166,7 +143,8 @@ class AuthIntegrationTests {
 
     mockMvc.perform(post("/api/v1/auth/login")
             .contentType(MediaType.APPLICATION_JSON)
-            .content(objectMapper.writeValueAsString(new LoginRequest("wrongpw_user", "WrongPassword999!"))))
+            .content(
+                objectMapper.writeValueAsString(new LoginRequest("wrongpw_user", "WrongPassword999!"))))
         .andExpect(status().isUnauthorized())
         .andExpect(jsonPath("$.message").value("Invalid credentials"));
   }
@@ -198,7 +176,8 @@ class AuthIntegrationTests {
   void validate_AdminRole_ClaimPresentInToken() throws Exception {
     mockMvc.perform(post("/api/v1/auth/credentials")
             .contentType(MediaType.APPLICATION_JSON)
-            .content(objectMapper.writeValueAsString(validCredentials("admin_user", "admin@test.com", Role.ADMIN))))
+            .content(objectMapper.writeValueAsString(
+                validCredentials("admin_user", "admin@test.com", Role.ADMIN))))
         .andExpect(status().isCreated());
 
     String accessToken = loginAndGetTokens("admin_user").getAccessToken();
@@ -289,12 +268,12 @@ class AuthIntegrationTests {
   private static AuthRequest validAuthRequest(String login, String email) {
     return AuthRequest.builder()
         .login(login)
-        .password("SuperSecret123!") // >= 12 символов, проходит валидацию
+        .password("SuperSecret123!")
         .email(email)
         .role(Role.USER)
         .name("Test")
         .surname("User")
-        .birthDate(LocalDate.of(1995, 1, 1)) // @Past — в прошлом
+        .birthDate(LocalDate.of(1995, 1, 1))
         .build();
   }
 

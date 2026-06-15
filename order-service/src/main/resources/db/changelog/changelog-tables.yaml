@@ -1,0 +1,189 @@
+databaseChangeLog:
+  - changeSet:
+      id: 1
+      author: Kirill
+      preConditions:
+        - onFail: WARN
+        - not:
+            - tableExists:
+                tableName: orders
+      changes:
+        - createTable:
+            tableName: orders
+            columns:
+              - column:
+                  name: id
+                  type: uuid
+                  constraints:
+                    primaryKey: true
+                    nullable: false
+              - column:
+                  name: user_id
+                  type: UUID
+                  constraints:
+                    nullable: false
+              - column:
+                  name: status
+                  type: varchar(50)
+                  constraints:
+                    nullable: false
+              - column:
+                  name: total_price
+                  type: decimal(10,2)
+                  constraints:
+                    nullable: false
+              - column:
+                  name: deleted
+                  type: boolean
+                  constraints:
+                    nullable: false
+              - column:
+                  name: created_at
+                  type: timestamp
+                  constraints:
+                    nullable: false
+              - column:
+                  name: updated_at
+                  type: timestamp
+                  constraints:
+                    nullable: false
+
+  - changeSet:
+      id: 2
+      author: Kirill
+      preConditions:
+        - onFail: WARN
+        - not:
+            - tableExists:
+                tableName: items
+      changes:
+        - createTable:
+            tableName: items
+            columns:
+              - column:
+                  name: id
+                  type: uuid
+                  constraints:
+                    primaryKey: true
+                    nullable: false
+              - column:
+                  name: name
+                  type: VARCHAR(100)
+                  constraints:
+                    nullable: false
+              - column:
+                  name: price
+                  type: DECIMAL(10,2)
+                  constraints:
+                    nullable: false
+              - column:
+                  name: created_at
+                  type: timestamp
+                  constraints:
+                    nullable: false
+              - column:
+                  name: updated_at
+                  type: timestamp
+                  constraints:
+                    nullable: false
+  - changeSet:
+      id: 3
+      author: Kirill
+      preConditions:
+        - onFail: WARN
+        - not:
+            - tableExists:
+                tableName: order_items
+      changes:
+        - createTable:
+            tableName: order_items
+            columns:
+              - column:
+                  name: id
+                  type: uuid
+                  constraints:
+                    primaryKey: true
+                    nullable: false
+              - column:
+                  name: order_id
+                  type: uuid
+                  constraints:
+                    foreignKeyName: fk_order_item_order
+                    referencedTableName: orders
+                    referencedColumnNames: id
+                    nullable: false
+              - column:
+                  name: item_id
+                  type: uuid
+                  constraints:
+                    foreignKeyName: fk_order_item_item
+                    referencedTableName: items
+                    referencedColumnNames: id
+                    nullable: false
+              - column:
+                  name: quantity
+                  type: bigint
+                  constraints:
+                    nullable: false
+              - column:
+                  name: created_at
+                  type: timestamp
+                  constraints:
+                    nullable: false
+              - column:
+                  name: updated_at
+                  type: timestamp
+                  constraints:
+                    nullable: false
+  - changeSet:
+      id: 4
+      author: Kirill
+      changes:
+        - createIndex:
+            tableName: orders
+            indexName: idx_order_user_id
+            columns:
+              - column:
+                  name: user_id
+        - createIndex:
+            tableName: orders
+            indexName: idx_user_status
+            columns:
+              - column:
+                  name: status
+        - createIndex:
+            tableName: orders
+            indexName: idx_order_deleted
+            columns:
+              - column:
+                  name: deleted
+        - createIndex:
+            tableName: order_items
+            indexName: idx_order_item_order_id
+            columns:
+              - column:
+                  name: order_id
+        - createIndex:
+            tableName: order_items
+            indexName: idx_order_item_item_id
+            columns:
+              - column:
+                  name: item_id
+        - createIndex:
+            tableName: order_items
+            indexName: idx_order_item_quantity
+            columns:
+              - column:
+                  name: quantity
+        - createIndex:
+            tableName: items
+            indexName: idx_item_name
+            columns:
+              - column:
+                  name: name
+        - createIndex:
+            tableName: items
+            indexName: idx_item_price
+            columns:
+              - column:
+                  name: price
