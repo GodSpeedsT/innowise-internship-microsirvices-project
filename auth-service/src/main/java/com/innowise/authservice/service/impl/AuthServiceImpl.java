@@ -1,5 +1,6 @@
 package com.innowise.authservice.service.impl;
 
+import com.innowise.authservice.client.AuthClient;
 import com.innowise.authservice.dto.AuthRequest;
 import com.innowise.authservice.dto.AuthResponse;
 import com.innowise.authservice.dto.CredentialsRequest;
@@ -31,9 +32,7 @@ public class AuthServiceImpl implements AuthService {
   private final PasswordEncoder passwordEncoder;
   private final RestClient restClient;
   private final TokenService tokenService;
-
-  @Value("${user-service.url}")
-  private String userServiceUrl;
+  private final AuthClient authClient;
 
   @Override
   @Transactional
@@ -53,20 +52,8 @@ public class AuthServiceImpl implements AuthService {
         .birthDate(authRequest.getBirthDate())
         .build();
 
-    try {
-      restClient.post()
-          .uri(userServiceUrl + "/api/v1/users")
-          .contentType(MediaType.APPLICATION_JSON)
-          .body(dto)
-          .retrieve()
-          .toBodilessEntity();
-    } catch (Exception e) {
-      log.error("User-service call failed during registration for login={}; rolling back",
-          authRequest.getLogin(), e);
-      authRepository.delete(savedUser);
-      throw new CredentialsException(
-          "Registration failed: User Service is unavailable. " + e.getMessage());
-    }
+    authClient.sendUserData(dto);
+
     return userId;
   }
 
