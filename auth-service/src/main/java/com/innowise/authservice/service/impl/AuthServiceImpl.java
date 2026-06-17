@@ -15,13 +15,10 @@ import com.innowise.authservice.service.TokenService;
 import java.util.UUID;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.beans.factory.annotation.Value;
-import org.springframework.http.MediaType;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.security.oauth2.jwt.Jwt;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
-import org.springframework.web.client.RestClient;
 
 @Slf4j
 @Service
@@ -30,7 +27,6 @@ public class AuthServiceImpl implements AuthService {
 
   private final AuthRepository authRepository;
   private final PasswordEncoder passwordEncoder;
-  private final RestClient restClient;
   private final TokenService tokenService;
   private final AuthClient authClient;
 

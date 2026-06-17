@@ -2,8 +2,6 @@ package com.innowise.authservice.client;
 
 import com.innowise.authservice.dto.UserDtoForUserService;
 import com.innowise.authservice.exception.CredentialsException;
-import com.innowise.authservice.repository.AuthRepository;
-import java.util.UUID;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
@@ -20,7 +18,6 @@ public class AuthClient {
   private String userServiceUrl;
 
   private final RestClient restClient;
-  private final AuthRepository authRepository;
 
   public void sendUserData(UserDtoForUserService dto) {
     try {

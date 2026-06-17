@@ -4,10 +4,13 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyString;
+import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.verifyNoInteractions;
 import static org.mockito.Mockito.when;
 
+import com.innowise.authservice.client.AuthClient;
 import com.innowise.authservice.dto.AuthRequest;
 import com.innowise.authservice.dto.AuthResponse;
 import com.innowise.authservice.dto.CredentialsRequest;
@@ -22,7 +25,6 @@ import com.innowise.authservice.service.impl.AuthServiceImpl;
 import java.time.LocalDate;
 import java.util.Optional;
 import java.util.UUID;
-import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
@@ -30,28 +32,21 @@ import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.security.oauth2.jwt.Jwt;
-import org.springframework.test.util.ReflectionTestUtils;
-import org.springframework.web.client.RestClient;
 
 @ExtendWith(MockitoExtension.class)
-
 class AuthServiceTest {
-  @Mock private AuthRepository authRepository;
-  @Mock private PasswordEncoder passwordEncoder;
-  @Mock private TokenService tokenService;
-  @Mock private RestClient restClient;
 
-  @Mock private RestClient.RequestBodyUriSpec requestBodyUriSpec;
-  @Mock private RestClient.RequestBodySpec requestBodySpec;
-  @Mock private RestClient.ResponseSpec responseSpec;
+  @Mock
+  private AuthRepository authRepository;
+  @Mock
+  private PasswordEncoder passwordEncoder;
+  @Mock
+  private TokenService tokenService;
+  @Mock
+  private AuthClient authClient;
 
   @InjectMocks
   private AuthServiceImpl authService;
-
-  @BeforeEach
-  void setUp() {
-    ReflectionTestUtils.setField(authService, "userServiceUrl", "http://localhost:9999");
-  }
 
   @Test
   void register_Success_ShouldSaveUserAndCallUserService() {
@@ -61,14 +56,14 @@ class AuthServiceTest {
     when(authRepository.existsByLoginOrEmail("login", "email@test.com")).thenReturn(false);
     when(passwordEncoder.encode("SuperSecret123!")).thenReturn("hashed");
     when(authRepository.save(any(AuthUser.class))).thenReturn(savedUser);
-    stubRestClientChain();
 
     UUID result = authService.register(request);
 
     assertThat(result).isEqualTo(savedUser.getId());
     verify(authRepository).save(any(AuthUser.class));
     verify(authRepository, never()).delete(any());
-    verify(restClient).post();
+
+    verify(authClient).sendUserData(any(UserDtoForUserService.class));
   }
 
   @Test
@@ -79,11 +74,11 @@ class AuthServiceTest {
         .isInstanceOf(CredentialsException.class);
 
     verify(authRepository, never()).save(any());
-    verify(restClient, never()).post();
+    verifyNoInteractions(authClient);
   }
 
   @Test
-  void register_UserServiceThrowsException_ShouldRollbackAndThrowCredentialsException() {
+  void register_UserServiceThrowsException_ShouldThrowCredentialsException() {
     AuthRequest request = validAuthRequest("login", "email@test.com");
     AuthUser savedUser = AuthUser.builder().id(UUID.randomUUID()).login("login").build();
 
@@ -91,17 +86,13 @@ class AuthServiceTest {
     when(passwordEncoder.encode(anyString())).thenReturn("hashed");
     when(authRepository.save(any(AuthUser.class))).thenReturn(savedUser);
 
-    when(restClient.post()).thenReturn(requestBodyUriSpec);
-    when(requestBodyUriSpec.uri(anyString())).thenReturn(requestBodySpec);
-    when(requestBodySpec.contentType(any())).thenReturn(requestBodySpec);
-    when(requestBodySpec.body(any())).thenReturn(requestBodySpec);
-    when(requestBodySpec.retrieve()).thenThrow(new RuntimeException("Connection refused"));
+    doThrow(new CredentialsException(
+        "Registration failed: User Service is unavailable. Connection refused"))
+        .when(authClient).sendUserData(any(UserDtoForUserService.class));
 
     assertThatThrownBy(() -> authService.register(request))
         .isInstanceOf(CredentialsException.class)
         .hasMessageContaining("unavailable");
-
-    verify(authRepository).delete(savedUser);
   }
 
   @Test
@@ -119,7 +110,7 @@ class AuthServiceTest {
     authService.saveUserCredentials(request);
 
     verify(authRepository).save(any(AuthUser.class));
-    verify(restClient, never()).post();
+    verifyNoInteractions(authClient);
   }
 
   @Test
@@ -225,14 +216,6 @@ class AuthServiceTest {
 
     assertThat(result).isSameAs(expected);
     verify(tokenService).refreshToken("refresh.token");
-  }
-
-  private void stubRestClientChain() {
-    when(restClient.post()).thenReturn(requestBodyUriSpec);
-    when(requestBodyUriSpec.uri(anyString())).thenReturn(requestBodySpec);
-    when(requestBodySpec.contentType(any())).thenReturn(requestBodySpec);
-    when(requestBodySpec.body(any(UserDtoForUserService.class))).thenReturn(requestBodySpec);
-    when(requestBodySpec.retrieve()).thenReturn(responseSpec);
   }
 
   private static AuthRequest validAuthRequest(String login, String email) {
