@@ -229,4 +229,5 @@ class AuthServiceTest {
         .birthDate(LocalDate.of(1995, 1, 1))
         .build();
   }
+
 }
