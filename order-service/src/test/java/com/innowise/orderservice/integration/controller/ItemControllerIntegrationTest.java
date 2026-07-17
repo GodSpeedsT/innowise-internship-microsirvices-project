@@ -1,16 +1,16 @@
-package com.innowise.orderservice.integration;
+package com.innowise.orderservice.integration.controller;
 
 import com.innowise.orderservice.dao.repository.ItemRepository;
+import com.innowise.orderservice.dao.repository.OrderRepository;
 import com.innowise.orderservice.dto.request.ItemCreateRequest;
 import com.innowise.orderservice.entity.Item;
+import com.innowise.orderservice.integration.BaseIntegrationTest;
 import java.math.BigDecimal;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.MediaType;
-import org.springframework.security.oauth2.jwt.JwtDecoder;
 import org.springframework.security.test.context.support.WithMockUser;
-import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.test.web.servlet.MockMvc;
 import tools.jackson.databind.ObjectMapper;
 
@@ -24,15 +24,15 @@ class ItemControllerIntegrationTest extends BaseIntegrationTest {
   @Autowired
   private ItemRepository itemRepository;
   @Autowired
+  private OrderRepository orderRepository;
+  @Autowired
   private MockMvc mockMvc;
   @Autowired
   private ObjectMapper objectMapper;
-  @MockitoBean
-  private JwtDecoder jwtDecoder;
-
 
   @BeforeEach
   void setUp() {
+    orderRepository.deleteAll();
     itemRepository.deleteAll();
   }
 

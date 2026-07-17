@@ -1,0 +1,10 @@
+spring:
+  mongodb:
+    uri: mongodb://mongo:mongo@mongo_db:$27017/mongo?authSource=admin
+    password: mongo
+    username: mongo
+    representation:
+      uuid: standard
+api:
+  external:
+    url: https://www.random.org/integers/?num=1&min=1&max=10000&col=1&base=10&format=plain

@@ -13,6 +13,7 @@ import com.innowise.orderservice.entity.Order;
 import com.innowise.orderservice.entity.OrderStatus;
 import com.innowise.orderservice.exception.EntityNotFoundException;
 import com.innowise.orderservice.mapper.OrderMapper;
+import com.innowise.orderservice.messaging.producer.OrderEventProducer;
 import com.innowise.orderservice.service.impl.OrderServiceImpl;
 import java.math.BigDecimal;
 import java.time.LocalDate;
@@ -32,6 +33,7 @@ import org.springframework.data.domain.PageImpl;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.domain.Specification;
+import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.web.client.RestClient;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -55,7 +57,8 @@ class OrderServiceTest {
   private ItemRepository itemRepository;
   @Mock
   private UserClient userClient;
-
+  @Mock
+  private OrderEventProducer orderEventProducer;
   @InjectMocks
   private OrderServiceImpl orderService;
 

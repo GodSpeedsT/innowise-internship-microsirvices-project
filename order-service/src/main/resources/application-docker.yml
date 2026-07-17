@@ -24,6 +24,9 @@ spring:
         jwt:
           jwk-set-uri: http://auth-service:8085/api/v1/auth/jwks.json
 
+  kafka:
+    bootstrap-servers: ${KAFKA_HOST:kafka}:${KAFKA_PORT:9092}
+
 resilience4j:
   circuitbreaker:
     instances:

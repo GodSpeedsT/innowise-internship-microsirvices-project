@@ -1,4 +1,4 @@
-package com.innowise.orderservice.integration;
+package com.innowise.orderservice.integration.controller;
 
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.delete;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.put;
@@ -15,6 +15,8 @@ import com.innowise.orderservice.dto.request.UpdateOrderRequest;
 import com.innowise.orderservice.entity.Item;
 import com.innowise.orderservice.entity.Order;
 import com.innowise.orderservice.entity.OrderStatus;
+import com.innowise.orderservice.integration.BaseIntegrationTest;
+import com.innowise.orderservice.messaging.producer.OrderEventProducer;
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
 import java.util.List;
@@ -23,7 +25,6 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.MediaType;
-import org.springframework.security.oauth2.jwt.JwtDecoder;
 import org.springframework.security.test.context.support.WithMockUser;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.test.web.servlet.MockMvc;
@@ -40,7 +41,7 @@ class OrderControllerIntegrationTest extends BaseIntegrationTest {
   @Autowired
   private ObjectMapper objectMapper;
   @MockitoBean
-  private JwtDecoder jwtDecoder;
+  private OrderEventProducer producer;
 
   @BeforeEach
   void setUp() {

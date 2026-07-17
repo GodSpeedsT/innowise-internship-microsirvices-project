@@ -1,10 +1,8 @@
-package com.innowise.orderservice.integration;
+package com.innowise.paymentservice.integration;
 
-
-import com.github.tomakehurst.wiremock.WireMockServer;
 import com.github.tomakehurst.wiremock.client.WireMock;
-import com.innowise.orderservice.messaging.event.OrderCompletedEvent;
-import com.innowise.orderservice.messaging.event.PaymentCompletedEvent;
+import com.innowise.paymentservice.messaging.event.OrderCompletedEvent;
+import com.innowise.paymentservice.messaging.event.PaymentCompletedEvent;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.UUID;
@@ -15,58 +13,56 @@ import org.apache.kafka.clients.producer.ProducerConfig;
 import org.apache.kafka.common.serialization.StringDeserializer;
 import org.apache.kafka.common.serialization.StringSerializer;
 import org.junit.jupiter.api.BeforeEach;
-import org.springframework.boot.webmvc.test.autoconfigure.AutoConfigureMockMvc;
 import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.boot.webmvc.test.autoconfigure.AutoConfigureMockMvc;
 import org.springframework.http.MediaType;
 import org.springframework.kafka.support.serializer.JacksonJsonDeserializer;
 import org.springframework.kafka.support.serializer.JacksonJsonSerializer;
-import org.springframework.security.oauth2.jwt.JwtDecoder;
 import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.context.DynamicPropertyRegistry;
 import org.springframework.test.context.DynamicPropertySource;
-import org.springframework.test.context.bean.override.mockito.MockitoBean;
-import org.testcontainers.containers.PostgreSQLContainer;
 import org.testcontainers.kafka.KafkaContainer;
+import org.testcontainers.mongodb.MongoDBContainer;
 import org.wiremock.spring.ConfigureWireMock;
 import org.wiremock.spring.EnableWireMock;
-import org.wiremock.spring.InjectWireMock;
 
 @SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT)
 @AutoConfigureMockMvc
 @EnableWireMock(
-    @ConfigureWireMock(name = "user-service", port = 8089)
+    @ConfigureWireMock(name = "external-api", port = 8089)
 )
 @ActiveProfiles("test")
 public abstract class BaseIntegrationTest {
 
-  @InjectWireMock("user-service")
-  protected WireMockServer wireMockServer;
-  @MockitoBean
-  protected JwtDecoder jwtDecoder;
-  protected KafkaProducer<String, PaymentCompletedEvent> kafkaProducer;
-  protected KafkaConsumer<String, OrderCompletedEvent> kafkaConsumer;
-
-  private static final PostgreSQLContainer<?> POSTGRE_SQL_CONTAINER = new PostgreSQLContainer<>(
-      "postgres:latest")
-      .withDatabaseName("orders_test")
-      .withUsername("test")
-      .withPassword("test");
+  protected KafkaProducer<String, OrderCompletedEvent> kafkaProducer;
+  protected KafkaConsumer<String, PaymentCompletedEvent> kafkaConsumer;
+  protected UUID orderId;
+  protected final String userId = "915a75cb-a998-49ef-b966-710bff82d4a7";
+  private static final MongoDBContainer MONGO_DB_CONTAINER = new MongoDBContainer("mongo:latest");
   private static final KafkaContainer KAFKA_CONTAINER = new KafkaContainer("apache/kafka:latest");
 
   static {
-    POSTGRE_SQL_CONTAINER.start();
+    MONGO_DB_CONTAINER.start();
     KAFKA_CONTAINER.start();
   }
 
   @DynamicPropertySource
-  static void configureProperties(DynamicPropertyRegistry registry) {
-    registry.add("spring.datasource.url", POSTGRE_SQL_CONTAINER::getJdbcUrl);
-    registry.add("spring.datasource.password", POSTGRE_SQL_CONTAINER::getPassword);
-    registry.add("spring.datasource.username", POSTGRE_SQL_CONTAINER::getUsername);
+  static void properties(DynamicPropertyRegistry registry) {
+    registry.add("spring.mongodb.uri", MONGO_DB_CONTAINER::getReplicaSetUrl);
     registry.add("spring.kafka.bootstrap-servers", KAFKA_CONTAINER::getBootstrapServers);
-    registry.add("user-service.url",
-        () -> "http://localhost:8089/api/v1/users/");
+    registry.add("api.external.url", () ->
+        "http://localhost:8089/integers/?num=1&min=1&max=10000&col=1&base=10&format=plain");
+  }
 
+  protected void stubExternalApi() {
+    WireMock.stubFor(
+        WireMock.get(
+                WireMock.urlEqualTo(
+                    "/integers/?num=1&min=1&max=10000&col=1&base=10&format=plain"))
+            .willReturn(WireMock.aResponse()
+                .withStatus(200)
+                .withHeader("Content-Type", String.valueOf(MediaType.TEXT_PLAIN))
+                .withBody("6768\n")));
   }
 
   @BeforeEach
@@ -87,32 +83,13 @@ public abstract class BaseIntegrationTest {
         JacksonJsonDeserializer.class);
     consumerProps.put(ConsumerConfig.GROUP_ID_CONFIG, "test-consumer-" + UUID.randomUUID());
     consumerProps.put(ConsumerConfig.AUTO_OFFSET_RESET_CONFIG, "earliest");
-    consumerProps.put(JacksonJsonDeserializer.VALUE_DEFAULT_TYPE, OrderCompletedEvent.class);
+    consumerProps.put(JacksonJsonDeserializer.VALUE_DEFAULT_TYPE, PaymentCompletedEvent.class);
     consumerProps.put(JacksonJsonDeserializer.TRUSTED_PACKAGES, "*");
     consumerProps.put(JacksonJsonDeserializer.USE_TYPE_INFO_HEADERS, false);
     kafkaConsumer = new KafkaConsumer<>(consumerProps);
 
-  }
+    orderId = UUID.randomUUID();
 
-  protected void stubUserService(UUID userId, String username, String surname, String email) {
-    WireMock.stubFor(
-        WireMock.get(
-                WireMock.urlEqualTo("/api/v1/users/" + userId))
-            .willReturn(WireMock.aResponse()
-                .withStatus(200)
-                .withHeader("Content-Type", MediaType.APPLICATION_JSON_VALUE)
-                .withBody("""
-                    {
-                      "id" : "%s",
-                      "name" : "%s",
-                      "surname" : "%s",
-                      "email" : "%s"
-                    }
-                    """.formatted(userId, username, surname, email))));
-  }
-
-  protected void stubDefaultUser(UUID userId) {
-    stubUserService(userId, "Kirill", "Masterov", "masterov_k@bk.ru");
   }
 
 }

@@ -13,6 +13,7 @@ import com.innowise.orderservice.entity.Order;
 import com.innowise.orderservice.entity.OrderItem;
 import com.innowise.orderservice.exception.EntityNotFoundException;
 import com.innowise.orderservice.mapper.OrderMapper;
+import com.innowise.orderservice.messaging.producer.OrderEventProducer;
 import com.innowise.orderservice.service.OrderService;
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
@@ -35,6 +36,7 @@ public class OrderServiceImpl implements OrderService {
   private final OrderMapper orderMapper;
   private final ItemRepository itemRepository;
   private final UserClient userClient;
+  private final OrderEventProducer producer;
 
   @Transactional
   public OrderResponse createOrder(OrderCreateRequest request) {
@@ -46,9 +48,9 @@ public class OrderServiceImpl implements OrderService {
     Order savedOrder = orderRepository.save(order);
     OrderResponse response = orderMapper.toResponse(savedOrder);
     response.setUser(userClient.getUserInfo(request.getUserId()));
+    producer.sendOrderCompletedEvent(order.getId());
     return response;
   }
-
 
   @Transactional(readOnly = true)
   public OrderResponse getOrderById(UUID orderId) {

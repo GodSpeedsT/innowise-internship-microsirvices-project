@@ -1,0 +1,37 @@
+spring:
+  application:
+    name: payment-service
+
+  mongodb:
+    uri: mongodb://${MONGO_DB_USERNAME:mongo}:${MONGO_DB_PASSWORD:mongo}@mongo_db:${MONGO_DB_PORT:27017}/${MONGO_DB_DATABASE:mongo}?authSource=admin
+    password: ${MONGO_DB_PASSWORD:mongo}
+    username: ${MONGO_DB_USERNAME:mongo}
+    representation:
+      uuid: standard
+
+  security:
+    oauth2:
+      resourceserver:
+        jwt:
+          jwk-set-uri: http://auth-service:8085/api/v1/auth/jwks.json
+
+  kafka:
+    bootstrap-servers: ${KAFKA_HOST:kafka}:${KAFKA_PORT:9092}
+
+mongock:
+  migration-scan-package: com.innowise.paymentservice.migration
+  lock-acquired-for-millis: 60000
+  lock-quit-trying-after-millis: 180000
+
+api:
+  external:
+    url: https://www.random.org/integers/?num=1&min=1&max=10000&col=1&base=10&format=plain
+
+server:
+  port: 8083
+
+logging:
+  level:
+    root: info
+    org.springframework.data.mongodb: info
+    org.springframework.kafka: info
