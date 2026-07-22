@@ -37,6 +37,14 @@ jobs:
         run: mvn clean compile -DskipTests
         working-directory: ./order-service
 
+      - name: Compile payment-service
+        run: mvn clean compile -DskipTests
+        working-directory: ./payment-service
+
+      - name: Compile api-gateway
+        run: mvn clean compile -DskipTests
+        working-directory: ./api-gateway
+
       - name: Upload compiled user-service classes
         uses: actions/upload-artifact@v4
         with:
