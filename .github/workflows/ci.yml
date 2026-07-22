@@ -58,6 +58,20 @@ jobs:
           path: order-service/target/
           retention-days: 1
 
+      - name: Upload compiled payment-service classes
+        uses: actions/upload-artifact@v4
+        with:
+          name: payment-service-target
+          path: payment-service/target/
+          retention-days: 1
+
+      - name: Upload compiled api-gateway classes
+        uses: actions/upload-artifact@v4
+        with:
+          name: api-gateway-target
+          path: api-gateway/target/
+          retention-days: 1
+
   test:
     name: Testing
     needs: build
@@ -94,6 +108,18 @@ jobs:
           name: order-service-target
           path: order-service/target/
 
+      - name: Download compiled payment-service classes
+        uses: actions/download-artifact@v4
+        with:
+          name: payment-service-target
+          path: payment-service/target/
+
+      - name: Download compiled api-gateway classes
+        uses: actions/download-artifact@v4
+        with:
+          name: api-gateway-target
+          path: api-gateway/target/
+
       - name: Run tests & generate JaCoCo report for user-service
         run: mvn verify
         working-directory: ./user-service
@@ -105,6 +131,10 @@ jobs:
       - name: Run tests & generate JaCoCo report for order-service
         run: mvn verify
         working-directory: ./order-service
+
+      - name: Run tests & generate JaCoCo report for payment-service
+        run: mvn verify
+        working-directory: ./payment-service
 
       - name: Upload user-service test results
         uses: actions/upload-artifact@v4
@@ -125,6 +155,13 @@ jobs:
         with:
           name: order-service-test-target
           path: order-service/target/
+          retention-days: 1
+
+      - name: Upload payment-service test results
+        uses: actions/upload-artifact@v4
+        with:
+          name: payment-service-test-target
+          path: payment-service/target/
           retention-days: 1
 
   code-analysis:
@@ -170,6 +207,12 @@ jobs:
           name: order-service-test-target
           path: order-service/target/
 
+      - name: Download payment-service test results
+        uses: actions/download-artifact@v4
+        with:
+          name: payment-service-test-target
+          path: payment-service/target/
+
       - name: Analyze user-service with SonarCloud
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
@@ -208,6 +251,19 @@ jobs:
             -Dsonar.coverage.jacoco.xmlReportPaths=target/site/jacoco/jacoco.xml \
             -DskipTests
         working-directory: ./order-service
+
+      - name: Analyze payment-service with SonarCloud
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
+        run: |
+          mvn sonar:sonar \
+            -Dsonar.projectKey=${{ secrets.SONAR_PROJECT_KEY }} \
+            -Dsonar.organization=${{ secrets.SONAR_ORGANIZATION }} \
+            -Dsonar.host.url=https://sonarcloud.io \
+            -Dsonar.coverage.jacoco.xmlReportPaths=target/site/jacoco/jacoco.xml \
+            -DskipTests
+        working-directory: ./payment-service
 
   artifact:
     name: Artifact Creation
@@ -260,5 +316,29 @@ jobs:
           tags: |
             ${{ secrets.DOCKERHUB_USERNAME }}/order-service:latest
             ${{ secrets.DOCKERHUB_USERNAME }}/order-service:${{ github.sha }}
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+
+      - name: Build and push payment-service
+        uses: docker/build-push-action@v5
+        with:
+          context: ./payment-service
+          file: ./payment-service/Dockerfile
+          push: true
+          tags: |
+            ${{ secrets.DOCKERHUB_USERNAME }}/payment-service:latest
+            ${{ secrets.DOCKERHUB_USERNAME }}/payment-service:${{ github.sha }}
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+
+      - name: Build and push api-gateway
+        uses: docker/build-push-action@v5
+        with:
+          context: ./api-gateway
+          file: ./api-gateway/Dockerfile
+          push: true
+          tags: |
+            ${{ secrets.DOCKERHUB_USERNAME }}/api-gateway:latest
+            ${{ secrets.DOCKERHUB_USERNAME }}/api-gateway:${{ github.sha }}
           cache-from: type=gha
           cache-to: type=gha,mode=max

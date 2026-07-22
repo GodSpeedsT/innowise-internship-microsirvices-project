@@ -1,0 +1,28 @@
+apiVersion: gateway/v1
+kind: Deployment
+metadata:
+  name: auth-service
+  labels:
+    app: auth-service
+spec:
+  replicas: 2
+  selector:
+    matchLabels:
+      app: auth-service
+  template:
+    metadata:
+      labels:
+        app: auth-service
+    spec:
+      containers:
+        - name: auth-service
+          image: tarantasik/auth-service:latest
+          ports:
+            - containerPort: 8085
+          resources:
+            requests:
+              cpu: "250m"
+              memory: "384Mi"
+            limits:
+              cpu: "500m"
+              memory: "512Mi"

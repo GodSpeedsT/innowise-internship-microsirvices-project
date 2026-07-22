@@ -1,0 +1,28 @@
+apiVersion: gateway/v1
+kind: Deployment
+metadata:
+  name: api-gateway
+  labels:
+    app: api-gateway
+spec:
+  replicas: 2
+  selector:
+    matchLabels:
+      app: api-gateway
+  template:
+    metadata:
+      labels:
+        app: api-gateway
+    spec:
+      containers:
+        - name: api-gateway
+          image: tarantasik/api-gateway:latest
+          ports:
+            - containerPort: 8080
+          resources:
+            requests:
+              cpu: "250m"
+              memory: "384Mi"
+            limits:
+              cpu: "500m"
+              memory: "512Mi"

@@ -1,0 +1,28 @@
+apiVersion: gateway/v1
+kind: Deployment
+metadata:
+  name: order-service
+  labels:
+    app: order-service
+spec:
+  replicas: 2
+  selector:
+    matchLabels:
+      app: order-service
+  template:
+    metadata:
+      labels:
+        app: order-service
+    spec:
+      containers:
+        - name: order-service
+          image: tarantasik/order-service:latest
+          ports:
+            - containerPort: 8082
+          resources:
+            requests:
+              cpu: "250m"
+              memory: "384Mi"
+            limits:
+              cpu: "500m"
+              memory: "512Mi"
