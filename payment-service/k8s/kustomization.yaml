@@ -1,0 +1,20 @@
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+resources:
+  - deployment.yaml
+  - service.yaml
+  - db/
+
+secretGenerator:
+  - name: payment-service-credentials
+    envs:
+      - ../envs/payment-service.secret.env
+
+configMapGenerator:
+  - name: payment-service-config
+    envs:
+      - ../envs/payment-service.config.env
+
+images:
+  - name: tarantasik/payment-service
+    newTag: "1.2.1"

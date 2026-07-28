@@ -1,4 +1,4 @@
-apiVersion: gateway/v1
+apiVersion: apps/v1
 kind: Deployment
 metadata:
   name: auth-service
@@ -9,6 +9,8 @@ spec:
   selector:
     matchLabels:
       app: auth-service
+  strategy:
+    type: RollingUpdate
   template:
     metadata:
       labels:
@@ -19,6 +21,15 @@ spec:
           image: tarantasik/auth-service:latest
           ports:
             - containerPort: 8085
+          envFrom:
+            - configMapRef:
+                name: auth-service-config
+            - secretRef:
+                name: auth-service-credentials
+          volumeMounts:
+            - name: pem-volumes
+              mountPath: /etc/keys
+              readOnly: true
           resources:
             requests:
               cpu: "250m"
@@ -26,3 +37,22 @@ spec:
             limits:
               cpu: "500m"
               memory: "512Mi"
+          startupProbe:
+            httpGet:
+              path: /actuator/health/liveness
+              port: 8085
+            failureThreshold: 30
+            periodSeconds: 5
+          livenessProbe:
+            httpGet:
+              path: /actuator/health/liveness
+              port: 8085
+            initialDelaySeconds: 20
+          readinessProbe:
+            httpGet:
+              path: /actuator/health/readiness
+              port: 8085
+      volumes:
+        - name: pem-volumes
+          secret:
+            secretName: auth-service-jwt-keys

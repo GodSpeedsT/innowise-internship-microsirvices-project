@@ -12,7 +12,9 @@ import java.security.spec.X509EncodedKeySpec;
 import java.util.Base64;
 import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.core.io.ClassPathResource;
+import org.springframework.core.io.Resource;
 import org.springframework.stereotype.Component;
 
 @Getter
@@ -20,15 +22,19 @@ import org.springframework.stereotype.Component;
 @Component
 public class JwtKeyLoader {
 
+  @Value("${jwt.private-key-location:classpath:keys/private.pem}")
+  private Resource privateKeyLocation;
+  @Value("${jwt.public-key-location:classpath:keys/public.pem}")
+  private Resource publicKeyLocation;
+
   private RSAPublicKey publicKey;
   private RSAPrivateKey privateKey;
-
 
   @PostConstruct
   public void init() throws Exception {
     try {
-      this.publicKey = loadPublicKeyFromFile();
-      this.privateKey = loadPrivateKeyFromFile();
+      this.publicKey = loadPublicKey();
+      this.privateKey = loadPrivateKey();
       log.info("Public Key: {}", Base64.getEncoder().encodeToString(publicKey.getEncoded()));
     } catch (Exception e) {
       log.error("Unable to load keys, generating. Reason: ", e);
@@ -38,9 +44,8 @@ public class JwtKeyLoader {
     }
   }
 
-  private RSAPublicKey loadPublicKeyFromFile() throws Exception {
-    ClassPathResource resource = new ClassPathResource("keys/public.pem");
-    try (InputStream in = resource.getInputStream()) {
+  private RSAPublicKey loadPublicKey() throws Exception {
+    try (InputStream in = publicKeyLocation.getInputStream()) {
       String key = new String(in.readAllBytes())
           .replaceAll("\\s", "");
       byte[] decoded = Base64.getDecoder().decode(key);
@@ -49,9 +54,8 @@ public class JwtKeyLoader {
     }
   }
 
-  private RSAPrivateKey loadPrivateKeyFromFile() throws Exception {
-    ClassPathResource resource = new ClassPathResource("keys/private.pem");
-    try (InputStream in = resource.getInputStream()) {
+  private RSAPrivateKey loadPrivateKey() throws Exception {
+   try (InputStream in = privateKeyLocation.getInputStream()) {
       String key = new String(in.readAllBytes())
           .replaceAll("\\s", "");
       byte[] decoded = Base64.getDecoder().decode(key);

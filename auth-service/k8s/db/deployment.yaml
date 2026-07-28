@@ -1,0 +1,32 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: auth-db
+spec:
+  replicas: 1
+  strategy:
+    type: Recreate
+  selector:
+    matchLabels:
+      app: auth-db
+  template:
+    metadata:
+      labels:
+        app: auth-db
+    spec:
+      containers:
+        - name: postgres
+          image: postgres:latest
+          envFrom:
+            - secretRef:
+                name: auth-db-credentials
+          ports:
+            - containerPort: 5432
+          volumeMounts:
+            - name: postgresql
+              mountPath: /var/lib/postgresql
+      volumes:
+        - name: postgresql
+          persistentVolumeClaim:
+            claimName: auth-db-data
+

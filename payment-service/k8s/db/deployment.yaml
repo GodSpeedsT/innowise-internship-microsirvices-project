@@ -1,0 +1,32 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: payments-mongo
+spec:
+  replicas: 1
+  strategy:
+    type: Recreate
+  selector:
+    matchLabels:
+      app: payments-mongo
+  template:
+    metadata:
+      labels:
+        app: payments-mongo
+    spec:
+      containers:
+        - name: mongo
+          image: mongo:7.0
+          envFrom:
+            - secretRef:
+                name: payments-mongo-credentials
+          ports:
+            - containerPort: 27017
+          volumeMounts:
+            - mountPath: data
+              name: /data/db
+      volumes:
+        - name: data
+          persistentVolumeClaim:
+            claimName: payments-mongo-data
+

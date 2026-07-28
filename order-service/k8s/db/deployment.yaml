@@ -1,0 +1,32 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: auth-db
+spec:
+  replicas: 1
+  strategy:
+    type: Recreate
+  selector:
+    matchLabels:
+      app: order-db
+  template:
+    metadata:
+      labels:
+        app: order-db
+    spec:
+      containers:
+        - name: postgres
+          image: postgres:latest
+          envFrom:
+            - secretRef:
+                name: order-db-credentials
+          ports:
+            - containerPort: 5432
+          volumeMounts:
+            - mountPath: postgresql
+              name: /var/lib/postgresql
+      volumes:
+        - name: postgresql
+          persistentVolumeClaim:
+            claimName: order-db-data
+

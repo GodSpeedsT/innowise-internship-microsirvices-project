@@ -1,0 +1,20 @@
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+resources:
+  - deployment.yaml
+  - service.yaml
+  - db/
+
+secretGenerator:
+  - name: order-service-credentials
+    envs:
+      - ../envs/order-service.secret.env
+
+configMapGenerator:
+  - name: order-service-config
+    envs:
+      - ../envs/order-service.config.env
+
+images:
+  - name: tarantasik/order-service
+    newTag: "1.2.1"

@@ -1,6 +1,6 @@
 spring:
   datasource:
-    url: jdbc:postgresql://auth_db:5432/${AUTH_DB_DATABASE:secret}
+    url: jdbc:postgresql://auth-db:5432/${AUTH_DB_DATABASE:secret}
     username: ${AUTH_DB_USERNAME:secret}
     password: ${AUTH_DB_PASSWORD:secret}
     driver-class-name: org.postgresql.Driver
@@ -16,6 +16,8 @@ spring:
 jwt:
   access-expiration-ms: 900000
   refresh-expiration-ms: 604800000
+  private-key-location: ${JWT_PRIVATE_KEY_LOCATION:classpath:keys/private.pem}
+  public-key-location: ${JWT_PUBLIC_KEY_LOCATION:classpath:keys/public.pem}
 
 user-service:
   url: http://user-service:8081

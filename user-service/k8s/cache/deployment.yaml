@@ -1,0 +1,31 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: users-redis
+spec:
+  replicas: 1
+  strategy:
+    type: Recreate
+  selector:
+    matchLabels:
+      app: users-redis
+  template:
+    metadata:
+      labels:
+        app: users-redis
+    spec:
+      containers:
+        - name: users-redis
+          image: redis:latest
+          envFrom:
+            - secretRef:
+                name: users-redis-credentials
+          ports:
+            - containerPort: 6379
+          volumeMounts:
+            - mountPath: data
+              name: redis_data:/data
+      volumes:
+        - name: data
+          persistentVolumeClaim:
+            claimName: users-redis-data

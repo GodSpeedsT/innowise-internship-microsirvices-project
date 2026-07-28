@@ -1,0 +1,32 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: users-db
+spec:
+  replicas: 1
+  strategy:
+    type: Recreate
+  selector:
+    matchLabels:
+      app: users-db
+  template:
+    metadata:
+      labels:
+        app: users-db
+    spec:
+      containers:
+        - name: postgres
+          image: postgres:latest
+          envFrom:
+            - secretRef:
+                name: users-db-credentials
+          ports:
+            - containerPort: 5432
+          volumeMounts:
+            - name: postgresql
+              mountPath: /var/lib/postgresql
+      volumes:
+        - name: postgresql
+          persistentVolumeClaim:
+            claimName: users-db-data
+

@@ -25,19 +25,19 @@ services:
     environment:
       SPRING_PROFILES_ACTIVE: docker
       USERS_DB_HOST: localhost
-      USERS_DB_DATABASE: user_db
+      USERS_DB_DATABASE: user-db
       USERS_DB_USERNAME: postgres
       USERS_DB_PASSWORD: postgres
-      REDIS_HOST: users_redis
+      REDIS_HOST: users-redis
       REDIS_DATABASE: 0
     depends_on:
-      - users_db
-      - users_redis
+      - users-db
+      - users-redis
     networks:
       - innowise_network
 
-  users_db:
-    container_name: users_db
+  users-db:
+    container_name: users-db
     image: postgres:latest
     environment:
       POSTGRES_USER: ${USERS_DB_USERNAME}
@@ -50,8 +50,8 @@ services:
     networks:
       - innowise_network
 
-  users_redis:
-    container_name: users_redis
+  users-redis:
+    container_name: users-redis
     image: redis:latest
     environment:
       REDIS_HOST: ${REDIS_HOST}
@@ -76,12 +76,12 @@ services:
       ORDERS_DB_USERNAME: orders
       ORDERS_DB_PASSWORD: orders
     depends_on:
-      - order_db
+      - order-db
     networks:
       - innowise_network
 
   order_db:
-    container_name: order_db
+    container_name: order-db
     image: postgres:latest
     environment:
       POSTGRES_USER: ${ORDERS_DB_USERNAME}
@@ -107,12 +107,12 @@ services:
       MONGO_DB_USERNAME: ${MONGO_DB_USERNAME}
       MONGO_DB_PASSWORD: ${MONGO_DB_PASSWORD}
     depends_on:
-      - mongo_db
+      - mongo-db
     networks:
       - innowise_network
 
-  mongo_db:
-    container_name: mongo_db
+  mongo-db:
+    container_name: mongo-db
     image: mongo:latest
     restart: unless-stopped
     environment:
@@ -127,7 +127,7 @@ services:
       - innowise_network
 
   auth-service:
-    container_name: auth_service
+    container_name: auth-service
     build:
       context: ./auth-service
       dockerfile: Dockerfile
@@ -139,12 +139,12 @@ services:
       AUTH_DB_USERNAME: secret
       AUTH_DB_PASSWORD: secret
     depends_on:
-      - auth_db
+      - auth-db
     networks:
       - innowise_network
 
-  auth_db:
-    container_name: auth_db
+  auth-db:
+    container_name: auth-db
     image: postgres:latest
     environment:
       POSTGRES_USER: ${AUTH_DB_USERNAME}

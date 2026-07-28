@@ -1,6 +1,6 @@
 spring:
   datasource:
-    url: jdbc:postgresql://users_db:5432/${USERS_DB_DATABASE:user_db}
+    url: jdbc:postgresql://users-db:5432/${USERS_DB_DATABASE:user_db}
     username: ${USERS_DB_USERNAME:postgres}
     password: ${USERS_DB_PASSWORD:postgres}
   jpa:
@@ -15,7 +15,7 @@ spring:
 
   data:
     redis:
-      host: users_redis
+      host: users-redis
       port: 6379
       timeout: 5000ms
       database: ${REDIS_DATABASE:0}

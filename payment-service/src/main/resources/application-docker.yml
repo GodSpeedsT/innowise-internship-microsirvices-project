@@ -3,7 +3,7 @@ spring:
     name: payment-service
 
   mongodb:
-    uri: mongodb://${MONGO_DB_USERNAME:mongo}:${MONGO_DB_PASSWORD:mongo}@mongo_db:${MONGO_DB_PORT:27017}/${MONGO_DB_DATABASE:mongo}?authSource=admin
+    uri: mongodb://${MONGO_DB_USERNAME:mongo}:${MONGO_DB_PASSWORD:mongo}@mongo-db:${MONGO_DB_PORT:27017}/${MONGO_DB_DATABASE:mongo}?authSource=admin
     password: ${MONGO_DB_PASSWORD:mongo}
     username: ${MONGO_DB_USERNAME:mongo}
     representation:
