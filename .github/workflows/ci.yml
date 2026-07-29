@@ -8,345 +8,60 @@ on:
 env:
   FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
 jobs:
-  build:
-    name: Build
+  build-and-test:
+    name: Build & Test
     runs-on: ubuntu-latest
 
+    strategy:
+      matrix:
+        service: [api-gateway, user-service, order-service, payment-service, auth-service]
     steps:
-      - name: Checkout source code
-        uses: actions/checkout@v4
-        with:
-          fetch-depth: 0
-
-      - name: Set up JDK 21
-        uses: actions/setup-java@v4
+      - uses: actions/checkout@v4
+      - uses: actions/setup-java@v4
         with:
           java-version: '21'
           distribution: 'temurin'
           cache: 'maven'
 
-      - name: Compile user-service
-        run: mvn clean compile -DskipTests
-        working-directory: ./user-service
-
-      - name: Compile auth-service
-        run: mvn clean compile -DskipTests
-        working-directory: ./auth-service
-
-      - name: Compile order-service
-        run: mvn clean compile -DskipTests
-        working-directory: ./order-service
-
-      - name: Compile payment-service
-        run: mvn clean compile -DskipTests
-        working-directory: ./payment-service
-
-      - name: Compile api-gateway
-        run: mvn clean compile -DskipTests
-        working-directory: ./api-gateway
-
-      - name: Upload compiled user-service classes
-        uses: actions/upload-artifact@v4
-        with:
-          name: user-service-target
-          path: user-service/target/
-          retention-days: 1
-
-      - name: Upload compiled auth-service classes
-        uses: actions/upload-artifact@v4
-        with:
-          name: auth-service-target
-          path: auth-service/target/
-          retention-days: 1
-
-      - name: Upload compiled order-service classes
-        uses: actions/upload-artifact@v4
-        with:
-          name: order-service-target
-          path: order-service/target/
-          retention-days: 1
-
-      - name: Upload compiled payment-service classes
-        uses: actions/upload-artifact@v4
-        with:
-          name: payment-service-target
-          path: payment-service/target/
-          retention-days: 1
-
-      - name: Upload compiled api-gateway classes
-        uses: actions/upload-artifact@v4
-        with:
-          name: api-gateway-target
-          path: api-gateway/target/
-          retention-days: 1
-
-  test:
-    name: Testing
-    needs: build
-    runs-on: ubuntu-latest
-
-    steps:
-      - name: Checkout source code
-        uses: actions/checkout@v4
-        with:
-          fetch-depth: 0
-
-      - name: Set up JDK 21
-        uses: actions/setup-java@v4
-        with:
-          java-version: '21'
-          distribution: 'temurin'
-          cache: 'maven'
-
-      - name: Download compiled user-service classes
-        uses: actions/download-artifact@v4
-        with:
-          name: user-service-target
-          path: user-service/target/
-
-      - name: Download compiled auth-service classes
-        uses: actions/download-artifact@v4
-        with:
-          name: auth-service-target
-          path: auth-service/target/
-
-      - name: Download compiled order-service classes
-        uses: actions/download-artifact@v4
-        with:
-          name: order-service-target
-          path: order-service/target/
-
-      - name: Download compiled payment-service classes
-        uses: actions/download-artifact@v4
-        with:
-          name: payment-service-target
-          path: payment-service/target/
-
-      - name: Download compiled api-gateway classes
-        uses: actions/download-artifact@v4
-        with:
-          name: api-gateway-target
-          path: api-gateway/target/
-
-      - name: Run tests & generate JaCoCo report for user-service
+      - name: Build & test
         run: mvn verify
-        working-directory: ./user-service
+        working-directory: ./${{ matrix.service }}
 
-      - name: Run tests & generate JaCoCo report for auth-service
-        run: mvn verify
-        working-directory: ./auth-service
-
-      - name: Run tests & generate JaCoCo report for order-service
-        run: mvn verify
-        working-directory: ./order-service
-
-      - name: Run tests & generate JaCoCo report for payment-service
-        run: mvn verify
-        working-directory: ./payment-service
-
-      - name: Upload user-service test results
-        uses: actions/upload-artifact@v4
-        with:
-          name: user-service-test-target
-          path: user-service/target/
-          retention-days: 1
-
-      - name: Upload auth-service test results
-        uses: actions/upload-artifact@v4
-        with:
-          name: auth-service-test-target
-          path: auth-service/target/
-          retention-days: 1
-
-      - name: Upload order-service test results
-        uses: actions/upload-artifact@v4
-        with:
-          name: order-service-test-target
-          path: order-service/target/
-          retention-days: 1
-
-      - name: Upload payment-service test results
-        uses: actions/upload-artifact@v4
-        with:
-          name: payment-service-test-target
-          path: payment-service/target/
-          retention-days: 1
-
-  code-analysis:
-    name: Code Analysis
-    needs: test
-    runs-on: ubuntu-latest
-
-    steps:
-      - name: Checkout source code
-        uses: actions/checkout@v4
-        with:
-          fetch-depth: 0
-
-      - name: Set up JDK 21
-        uses: actions/setup-java@v4
-        with:
-          java-version: '21'
-          distribution: 'temurin'
-          cache: 'maven'
-
-      - name: Cache SonarCloud packages
-        uses: actions/cache@v4
-        with:
-          path: ~/.sonar/cache
-          key: ${{ runner.os }}-sonar
-          restore-keys: ${{ runner.os }}-sonar
-
-      - name: Download user-service test results
-        uses: actions/download-artifact@v4
-        with:
-          name: user-service-test-target
-          path: user-service/target/
-
-      - name: Download auth-service test results
-        uses: actions/download-artifact@v4
-        with:
-          name: auth-service-test-target
-          path: auth-service/target/
-
-      - name: Download order-service test results
-        uses: actions/download-artifact@v4
-        with:
-          name: order-service-test-target
-          path: order-service/target/
-
-      - name: Download payment-service test results
-        uses: actions/download-artifact@v4
-        with:
-          name: payment-service-test-target
-          path: payment-service/target/
-
-      - name: Analyze user-service with SonarCloud
+      - name: Analyze with SonarCloud
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
         run: |
-          mvn sonar:sonar \
-            -Dsonar.projectKey=${{ secrets.SONAR_PROJECT_KEY }} \
-            -Dsonar.organization=${{ secrets.SONAR_ORGANIZATION }} \
-            -Dsonar.host.url=https://sonarcloud.io \
-            -Dsonar.coverage.jacoco.xmlReportPaths=target/site/jacoco/jacoco.xml \
-            -DskipTests
-        working-directory: ./user-service
-
-      - name: Analyze auth-service with SonarCloud
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-          SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
-        run: |
-          mvn sonar:sonar \
-            -Dsonar.projectKey=${{ secrets.SONAR_PROJECT_KEY }} \
-            -Dsonar.organization=${{ secrets.SONAR_ORGANIZATION }} \
-            -Dsonar.host.url=https://sonarcloud.io \
-            -Dsonar.coverage.jacoco.xmlReportPaths=target/site/jacoco/jacoco.xml \
-            -DskipTests
-        working-directory: ./auth-service
-
-      - name: Analyze order-service with SonarCloud
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-          SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
-        run: |
-          mvn sonar:sonar \
-            -Dsonar.projectKey=${{ secrets.SONAR_PROJECT_KEY }} \
-            -Dsonar.organization=${{ secrets.SONAR_ORGANIZATION }} \
-            -Dsonar.host.url=https://sonarcloud.io \
-            -Dsonar.coverage.jacoco.xmlReportPaths=target/site/jacoco/jacoco.xml \
-            -DskipTests
-        working-directory: ./order-service
-
-      - name: Analyze payment-service with SonarCloud
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-          SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
-        run: |
-          mvn sonar:sonar \
-            -Dsonar.projectKey=${{ secrets.SONAR_PROJECT_KEY }} \
-            -Dsonar.organization=${{ secrets.SONAR_ORGANIZATION }} \
-            -Dsonar.host.url=https://sonarcloud.io \
-            -Dsonar.coverage.jacoco.xmlReportPaths=target/site/jacoco/jacoco.xml \
-            -DskipTests
-        working-directory: ./payment-service
+          mvn org.sonarsource.scanner.maven:sonar-maven-plugin:sonar \
+                      -Dsonar.projectKey=${{ secrets.SONAR_PROJECT_KEY }}-${{ matrix.service }} \
+                      -Dsonar.organization=${{ secrets.SONAR_ORGANIZATION }} \
+                      -Dsonar.host.url=https://sonarcloud.io \
+                      -Dsonar.coverage.jacoco.xmlReportPaths=target/site/jacoco/jacoco.xml
+        working-directory: ./${{ matrix.service }}
 
   artifact:
     name: Artifact Creation
-    needs: test
+    needs: build-and-test
     runs-on: ubuntu-latest
-
+    strategy:
+      matrix:
+        service: [api-gateway, user-service, order-service, payment-service, auth-service]
     steps:
-      - name: Checkout source code
-        uses: actions/checkout@v4
-
-      - name: Set up Docker Buildx
-        uses: docker/setup-buildx-action@v3
-
-      - name: Log in to Docker Hub
-        uses: docker/login-action@v3
+      - uses: actions/checkout@v4
+      - uses: docker/setup-buildx-action@v3
+      - uses: docker/login-action@v3
         with:
           username: ${{ secrets.DOCKERHUB_USERNAME }}
           password: ${{ secrets.DOCKERHUB_TOKEN }}
 
-      - name: Build and push user-service
+      - name: Build and push
         uses: docker/build-push-action@v5
         with:
-          context: ./user-service
-          file: ./user-service/Dockerfile
+          context: ./${{ matrix.service }}
+          file: ./${{ matrix.service }}/Dockerfile
           push: true
           tags: |
-            ${{ secrets.DOCKERHUB_USERNAME }}/user-service:latest
-            ${{ secrets.DOCKERHUB_USERNAME }}/user-service:${{ github.sha }}
-          cache-from: type=gha
-          cache-to: type=gha,mode=max
-
-      - name: Build and push auth-service
-        uses: docker/build-push-action@v5
-        with:
-          context: ./auth-service
-          file: ./auth-service/Dockerfile
-          push: true
-          tags: |
-            ${{ secrets.DOCKERHUB_USERNAME }}/auth-service:latest
-            ${{ secrets.DOCKERHUB_USERNAME }}/auth-service:${{ github.sha }}
-          cache-from: type=gha
-          cache-to: type=gha,mode=max
-
-      - name: Build and push order-service
-        uses: docker/build-push-action@v5
-        with:
-          context: ./order-service
-          file: ./order-service/Dockerfile
-          push: true
-          tags: |
-            ${{ secrets.DOCKERHUB_USERNAME }}/order-service:latest
-            ${{ secrets.DOCKERHUB_USERNAME }}/order-service:${{ github.sha }}
-          cache-from: type=gha
-          cache-to: type=gha,mode=max
-
-      - name: Build and push payment-service
-        uses: docker/build-push-action@v5
-        with:
-          context: ./payment-service
-          file: ./payment-service/Dockerfile
-          push: true
-          tags: |
-            ${{ secrets.DOCKERHUB_USERNAME }}/payment-service:latest
-            ${{ secrets.DOCKERHUB_USERNAME }}/payment-service:${{ github.sha }}
-          cache-from: type=gha
-          cache-to: type=gha,mode=max
-
-      - name: Build and push api-gateway
-        uses: docker/build-push-action@v5
-        with:
-          context: ./api-gateway
-          file: ./api-gateway/Dockerfile
-          push: true
-          tags: |
-            ${{ secrets.DOCKERHUB_USERNAME }}/api-gateway:latest
-            ${{ secrets.DOCKERHUB_USERNAME }}/api-gateway:${{ github.sha }}
-          cache-from: type=gha
-          cache-to: type=gha,mode=max
+            ${{ secrets.DOCKERHUB_USERNAME }}/${{ matrix.service }}:latest
+            ${{ secrets.DOCKERHUB_USERNAME }}/${{ matrix.service }}:${{ github.sha }}
+          cache-from: type=gha,scope=${{ matrix.service }}
+          cache-to: type=gha,mode=max,scope=${{ matrix.service }}
