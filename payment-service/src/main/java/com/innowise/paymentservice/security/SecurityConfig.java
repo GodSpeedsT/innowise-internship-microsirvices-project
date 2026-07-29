@@ -20,7 +20,9 @@ public class SecurityConfig {
   public SecurityFilterChain securityFilterChain(HttpSecurity http) {
     http
         .authorizeHttpRequests(authorizeRequests ->
-            authorizeRequests.anyRequest().authenticated())
+            authorizeRequests
+                .requestMatchers("/actuator/**").permitAll()
+                .anyRequest().authenticated())
         .httpBasic(AbstractHttpConfigurer::disable)
         .csrf(AbstractHttpConfigurer::disable)
         .formLogin(AbstractHttpConfigurer::disable)

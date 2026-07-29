@@ -3,7 +3,4 @@ kind: Kustomization
 resources:
   - deployment.yaml
   - service.yaml
-
-images:
-  - name: tarantasik/api-gateway
-    newTag: "latest"
+  - secret.yaml

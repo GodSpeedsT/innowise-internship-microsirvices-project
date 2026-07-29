@@ -8,13 +8,13 @@ resources:
 secretGenerator:
   - name: payment-service-credentials
     envs:
-      - ../envs/payment-service.secret.env
+      - envs/payment-service.secret.env
 
 configMapGenerator:
   - name: payment-service-config
     envs:
-      - ../envs/payment-service.config.env
+      - envs/payment-service.config.env
 
 images:
   - name: tarantasik/payment-service
-    newTag: "1.2.1"
+    newTag: "latest"

@@ -23,11 +23,14 @@ public class SecurityConfig {
     http
         .csrf(AbstractHttpConfigurer::disable)
         .authorizeHttpRequests(auth -> auth
-            .requestMatchers("/api/v1/users").permitAll()
+            .requestMatchers(
+                "/api/v1/users",
+                "/actuator/**"
+            ).permitAll()
             .anyRequest().authenticated()
         )
         .oauth2ResourceServer(oauth -> oauth
-            .jwt(jwt->jwt.jwtAuthenticationConverter(jwtAuthenticationConverter))
+            .jwt(jwt -> jwt.jwtAuthenticationConverter(jwtAuthenticationConverter))
         )
         .formLogin(AbstractHttpConfigurer::disable)
         .httpBasic(AbstractHttpConfigurer::disable);

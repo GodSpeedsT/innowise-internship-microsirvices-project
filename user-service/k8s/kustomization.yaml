@@ -9,13 +9,13 @@ resources:
 secretGenerator:
   - name: user-service-credentials
     envs:
-      - ../envs/user-service.secret.env
+      - envs/user-service.secret.env
 
 configMapGenerator:
   - name: user-service-config
     envs:
-      - ../envs/user-service.config.env
+      - envs/user-service.config.env
 
 images:
   - name: tarantasik/user-service
-    newTag: "1.2.1"
+    newTag: "latest"

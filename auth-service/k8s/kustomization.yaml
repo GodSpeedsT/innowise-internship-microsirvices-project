@@ -22,4 +22,4 @@ configMapGenerator:
 
 images:
   - name: tarantasik/auth-service
-    newTag: "1.2.1"
+    newTag: "latest"

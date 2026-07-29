@@ -8,13 +8,13 @@ resources:
 secretGenerator:
   - name: order-service-credentials
     envs:
-      - ../envs/order-service.secret.env
+      - envs/order-service.secret.env
 
 configMapGenerator:
   - name: order-service-config
     envs:
-      - ../envs/order-service.config.env
+      - envs/order-service.config.env
 
 images:
   - name: tarantasik/order-service
-    newTag: "1.2.1"
+    newTag: "latest"
