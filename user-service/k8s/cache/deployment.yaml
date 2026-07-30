@@ -27,5 +27,4 @@ spec:
               mountPath: /data
       volumes:
         - name: users-redis-data
-          persistentVolumeClaim:
-            claimName: users-redis-data
+          emptyDir: {}
