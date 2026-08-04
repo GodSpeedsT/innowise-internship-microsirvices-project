@@ -1,18 +1,18 @@
 apiVersion: apps/v1
 kind: Deployment
 metadata:
-  name: payments-mongo
+  name: mongo-db
 spec:
   replicas: 1
   strategy:
     type: Recreate
   selector:
     matchLabels:
-      app: payments-mongo
+      app: mongo-db
   template:
     metadata:
       labels:
-        app: payments-mongo
+        app: mongo-db
     spec:
       containers:
         - name: mongo
@@ -23,8 +23,8 @@ spec:
           ports:
             - containerPort: 27017
           volumeMounts:
-            - mountPath: data
-              name: /data/db
+            - mountPath: /data/db
+              name: data
       volumes:
         - name: data
           persistentVolumeClaim:

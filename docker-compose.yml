@@ -22,14 +22,9 @@ services:
       dockerfile: Dockerfile
     ports:
       - "8081:8081"
-    environment:
-      SPRING_PROFILES_ACTIVE: docker
-      USERS_DB_HOST: localhost
-      USERS_DB_DATABASE: user-db
-      USERS_DB_USERNAME: postgres
-      USERS_DB_PASSWORD: postgres
-      REDIS_HOST: users-redis
-      REDIS_DATABASE: 0
+    env_file:
+      - ./user-service/envs/user-service.config.env
+      - ./user-service/envs/user-service.secret.env
     depends_on:
       - users-db
       - users-redis
@@ -39,10 +34,8 @@ services:
   users-db:
     container_name: users-db
     image: postgres:latest
-    environment:
-      POSTGRES_USER: ${USERS_DB_USERNAME}
-      POSTGRES_PASSWORD: ${USERS_DB_PASSWORD}
-      POSTGRES_DB: ${USERS_DB_DATABASE}
+    env_file:
+      - ./user-service/k8s/db/envs/users-db.secret.env
     ports:
       - "5432:5432"
     volumes:
@@ -53,9 +46,6 @@ services:
   users-redis:
     container_name: users-redis
     image: redis:latest
-    environment:
-      REDIS_HOST: ${REDIS_HOST}
-      REDIS_DATABASE: ${REDIS_DATABASE}
     ports:
       - "6379:6379"
     volumes:
@@ -70,23 +60,19 @@ services:
       dockerfile: Dockerfile
     ports:
       - "8082:8082"
-    environment:
-      SPRING_PROFILES_ACTIVE: docker
-      ORDERS_DB_DATABASE: orders
-      ORDERS_DB_USERNAME: orders
-      ORDERS_DB_PASSWORD: orders
+    env_file:
+      - ./order-service/envs/order-service.config.env
+      - ./order-service/envs/order-service.secret.env
     depends_on:
       - order-db
     networks:
       - innowise_network
 
-  order_db:
+  order-db:
     container_name: order-db
     image: postgres:latest
-    environment:
-      POSTGRES_USER: ${ORDERS_DB_USERNAME}
-      POSTGRES_PASSWORD: ${ORDERS_DB_PASSWORD}
-      POSTGRES_DB: ${ORDERS_DB_DATABASE}
+    env_file:
+      - ./order-service/k8s/db/envs/order-db.secret.env
     ports:
       - "5434:5432"
     volumes:
@@ -101,11 +87,9 @@ services:
       dockerfile: Dockerfile
     ports:
       - "8083:8083"
-    environment:
-      SPRING_PROFILES_ACTIVE: docker
-      MONGO_DB_DATABASE: ${MONGO_DB_DATABASE}
-      MONGO_DB_USERNAME: ${MONGO_DB_USERNAME}
-      MONGO_DB_PASSWORD: ${MONGO_DB_PASSWORD}
+    env_file:
+      - ./payment-service/envs/payment-service.config.env
+      - ./payment-service/envs/payment-service.secret.env
     depends_on:
       - mongo-db
     networks:
@@ -115,9 +99,8 @@ services:
     container_name: mongo-db
     image: mongo:latest
     restart: unless-stopped
-    environment:
-        MONGO_INITDB_ROOT_USERNAME: ${MONGO_DB_USERNAME}
-        MONGO_INITDB_ROOT_PASSWORD: ${MONGO_DB_PASSWORD}
+    env_file:
+      - ./payment-service/k8s/db/envs/payments-db.secret.env
     ports:
       - "27017:27017"
     volumes:
@@ -133,11 +116,9 @@ services:
       dockerfile: Dockerfile
     ports:
       - "8085:8085"
-    environment:
-      SPRING_PROFILES_ACTIVE: docker
-      AUTH_DB_DATABASE: secret
-      AUTH_DB_USERNAME: secret
-      AUTH_DB_PASSWORD: secret
+    env_file:
+      - ./auth-service/envs/auth-service.config.env
+      - ./auth-service/envs/auth-service.secret.env
     depends_on:
       - auth-db
     networks:
@@ -146,10 +127,8 @@ services:
   auth-db:
     container_name: auth-db
     image: postgres:latest
-    environment:
-      POSTGRES_USER: ${AUTH_DB_USERNAME}
-      POSTGRES_PASSWORD: ${AUTH_DB_PASSWORD}
-      POSTGRES_DB: ${AUTH_DB_DATABASE}
+    env_file:
+      - ./auth-service/k8s/db/envs/auth-db.secret.env
     ports:
       - "5433:5432"
     volumes:
