@@ -22,7 +22,9 @@ public class SecurityConfig {
 
         .authorizeExchange(auth ->
             auth
-                .pathMatchers("/api/v1/auth/login",
+                .pathMatchers(
+                    "/actuator/**",
+                    "/api/v1/auth/login",
                     "/api/v1/auth/tokens/refresh",
                     "/api/v1/auth/registrations",
                     "/api/v1/auth/jwks.json"
